@@ -1,0 +1,11 @@
+#const MAJOR_VER 0
+#const MINOR_VER 0
+#const PATCH_VER 0
+#const BUILD_NUM 1
+#define PROJECT_NAME ("editor")
+#define PROJECT_FILE ("editor.hsp")
+
+#addition "../mod_taker.as
+
+#packopt name "editor
+#packopt hide 1

@@ -1,0 +1,9 @@
+#include "hsp3utf.as
+
+	sDim data,65536*4
+	Repeat 65536
+		work=StrF("%c%c",cnt\256,cnt/256)
+		work=CnvAtoS(work)
+		lPoke data,cnt*4,lPeek(work)
+	Loop
+	bSave "utf8.dat",data,65536*4

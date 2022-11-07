@@ -1,0 +1,73 @@
+;*******************************************************************************
+; ワﾟイル名  : main.hsp
+; 更新年月日 : 平30/04/24
+; 作成者     : Taker32X
+; 作成年月日 : 平30/04/24
+; 機能       : 漢字 BASIC のインタプリタ
+;*******************************************************************************
+
+;------------------------------------ TODO ------------------------------------
+
+;------------------------------------------------------------------------------
+
+#include "hsp3utf.as
+
+#const MAJOR_VER 0
+#const MINOR_VER 0
+#const PATCH_VER 0
+#const BUILD_NUM 0
+#define PROJECT_NAME ("xime")
+#define PROJECT_FILE ("main.hsp")
+
+#addition "../mod_taker.as
+
+#uselib "user32
+#cfunc GetWindowLong "GetWindowLongA" int,int
+#func SetWindowLong "SetWindowLongA" int,int,int
+
+#enum WINDOW_MAIN=0
+
+	Screen WINDOW_MAIN,ginfo_dispx,ginfo_dispy,SCREEN_HIDE
+	width 640,400
+	SetWindowLong hwnd,-16,GetWindowLong(hwnd,-16)or$50000
+	Dim key,256
+	ClS 4
+	gSel WINDOW_MAIN,1
+	Color 0,255,255
+	Font MSMINCHO,16
+	Print "漢字 BASIC －培基君－ ("+VERSION_NUMBER+" 號)
+	Print "著作権(C)有 Taker32X 於平成卅年
+	Color 255,255,255
+	Print "準備好。
+	cursor_x=0:cursor_y=3
+
+*Main
+	Repeat
+		ReDraw 0
+		Color 0,0,0
+		BoxF
+		Color 255,255,255
+		Repeat 256
+			key_(cnt)=key(cnt)
+			GetKey key(cnt),cnt
+			If key_(cnt)==0&&'0'<=cnt&&cnt<='Z'&&key(cnt){
+				Pos cursor_x*8,cursor_y*16
+				If 'A'<=cnt&&cnt<='Z'{
+					Print StrF("%c",cnt+('a'-'A'))
+				}
+				cursor_x+
+				If cursor_x>=ginfo_winx/8{
+					cursor_x=0
+					cursor_y+
+				}
+				Break
+			}
+		Loop
+		Repeat 8*16
+			pGet cursor_x*8+cnt\8,cursor_y*16+cnt/8
+			Color 255-ginfo_r,255-ginfo_g,255-ginfo_b
+			pSet cursor_x*8+cnt\8,cursor_y*16+cnt/8
+		Loop
+		ReDraw 1
+		Await 15
+	Loop

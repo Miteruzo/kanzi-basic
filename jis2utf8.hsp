@@ -1,0 +1,15 @@
+	sDim source,4096
+	MesBox source,640,240
+	Wait 500
+	work=source
+	Split source,"\"",unko
+	Repeat stat/2
+		work2=unko(cnt*2+1)
+		work3=""
+		Repeat StrLen(work2)
+			work3+"StrF(\"%c\",$"+StrF("%X",Peek(work2,cnt))+")
+			If cnt!=StrLen(work2)-1: work3+"+
+		Loop
+		StrRep work,"\""+work2+"\"",work3
+	Loop
+	MesBox work,640,240

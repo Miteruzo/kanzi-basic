@@ -1,0 +1,12 @@
+#undef Split
+
+#module
+
+#deffunc Split str p1,str p2,array p3
+	string=p1
+	Repeat
+		p3(cnt)=StrMid(string,InStr(string,0,p2)
+	Loop
+	Return
+
+#global

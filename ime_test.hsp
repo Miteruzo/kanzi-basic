@@ -1,0 +1,136 @@
+//------ mod_ime.hsp ------------ by begriff --------------
+#module
+#uselib "imm32.dll"
+#cfunc ImmCreateContext "ImmCreateContext" 
+#cfunc ImmAssociateContext "ImmAssociateContext" int, int
+#func ImmSetCompositionWindow "ImmSetCompositionWindow" int,int,int 
+#func ImmGetCompositionString "ImmGetCompositionStringA" int,int,var,int
+#func ImmSetCompositionFont "ImmSetCompositionFontA" int,int
+#func ImmReleaseContext "ImmReleaseContext" int,int
+#func ImmDestroyContext "ImmDestroyContext" int
+#cfunc ImmGetContext "ImmGetContext" int
+ 
+//ウィンドウに関係づけられたIMEのハンドルを取得
+#deffunc ime_hwnd int hwnd2_
+defime=ImmGetContext(hwnd_2)
+return defime
+ 
+//ウィンドウにIMEを割り当て
+#deffunc ime_creat int hwnd3_
+hwnd_ime=ImmCreateContext()
+k=ImmAssociateContext(hwnd3_,hwnd_ime)
+return hwnd_ime
+ 
+//IMEの出現場所指定 標準0,0
+#deffunc ime_pos int hwnd2_ime,int com_posx, int com_posy
+compositionform = 0x0002 ,com_posx ,com_posy
+ImmSetCompositionWindow hwnd2_ime,varptr(compositionform)
+return
+ 
+//IMEに入力された決定文字を取得
+#deffunc ime_getstr int hwnd2_ime,var buf,var str_size
+str_size=0
+ImmGetCompositionString hwnd2_ime,$800,buf,str_size
+str_size=stat
+sdim buf,str_size+1
+ImmGetCompositionString hwnd2_ime,$800,buf,str_size
+return
+ 
+//IMEに入力された決定文字を取得　リアルタイム
+#deffunc ime_getstr_rt int hwnd6_ime,var buf3
+buf3=""
+str_size2=0
+ImmGetCompositionString hwnd6_ime,$8,buf3,str_size2
+str_size2=stat
+sdim buf3,str_size2+1
+ImmGetCompositionString hwnd6_ime,$8,buf3,str_size2
+return
+ 
+//IMEフォント指定
+#deffunc ime_font int hwnd4_ime,str font_name,int font_size
+dim logfont,20
+lfFaceName =font_name
+logfont(0)=font_size
+poke logfont,23,1
+memcpy logfont, lfFaceName, strlen(lfFaceName), 28, 0
+ImmSetCompositionFont hwnd4_ime,varptr(logfont)
+return
+ 
+//決定さてた文字を取得しやすくする
+#deffunc ime_getstrex int hwnd3_ime,var buf2
+ime_getstr hwnd3_ime,buf2,s
+if s=0:ss=0
+if s!0&&ss=0:str1_=buf:ss=1:else :buf2=""
+return
+ 
+//初期化簡略関数
+#deffunc ime_ini int hwnd4_, var hwnd5_ime
+ime_hwnd hwnd4_
+hwnd5_ime=stat
+if hwnd5_ime=0{
+ime_creat hwnd4_
+hwnd5_ime=stat
+}
+return
+ 
+//ウィンドウに関係づけられたIMEを削除
+#deffunc ime_dest int hwnd5_
+ime_ini hwnd5_, hwnd6_ime
+defime=ImmGetContext(hwnd5_)
+if defime!0{
+    ImmReleaseContext hwnd5_,defime
+    ImmDestroyContext defime
+}
+return
+#global
+
+
+#module
+#uselib "gdi32.dll"
+#func GetTextExtentPoint32 "GetTextExtentPoint32A" int,int,int,int
+#deffunc messize var tBuf,var tSizex,var tSizey
+notesel tBuf
+repeat notemax
+noteget tBuf2,cnt
+    tBuf3=tBuf2
+    txtLen=strlen(tBuf3)
+    dim tSize,2
+    GetTextExtentPoint32 hdc,varptr(tBuf3),txtLen,varptr(tSize)
+    if cnt=0:x=tSize(0)
+    if x<tSize(0):x=tSize(0)
+    loop
+    tSize(0)=x
+    tSize(1)=tSize(1)*notemax
+    tSizex=tSize(0)
+    tSizey=tSize(1)
+    return
+#global
+ 
+ 
+ime_ini hwnd,hwnd_ime
+ 
+str1_=""
+sdim buf,256*256
+sdim str1_,256*256
+ 
+fn="":fs=13
+ime_font hwnd_ime,fn,fs
+font fn,fs
+ime_pos hwnd_ime,0,40
+ 
+buf2=""
+buf3=""
+repeat
+    ime_getstrex hwnd_ime,buf//IMEで決定された文字を取得
+    ime_getstr_rt hwnd_ime,buf3//
+    color 255,255,255:boxf
+    color
+    pos 0,0:mes "全角モードにしてください。"
+    buf2=""+buf2+buf
+    messize buf2,msx,msy
+    ime_pos hwnd_ime,msx,20
+    pos 0,20:mes buf2+buf3
+redraw 1
+wait 3
+redraw 0
+loop

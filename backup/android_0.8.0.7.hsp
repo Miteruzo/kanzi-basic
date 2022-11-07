@@ -1,0 +1,56 @@
+;*******************************************************************************
+; ワﾟイル名  : android.hsp
+; 更新年月日 : 平31/01/18
+; 作成者     : Taker32X
+; 作成年月日 : 平31/01/18
+; 機能       : Android 版
+;*******************************************************************************
+
+#const MAJOR_VER 0
+#const MINOR_VER 8
+#const PATCH_VER 0
+#const BUILD_NUM 1
+#define PROJECT_NAME ("kb_android")
+#define PROJECT_FILE ("android.hsp")
+
+#addition "../mod_taker.as
+#include "hsp3dish.as
+
+#packopt xsize 640
+#packopt ysize 800
+
+#const SIZE_X 8
+#const SIZE_Y 16
+
+#const MAX_X 80
+#const MAX_Y 25
+
+#module Basic
+
+#deffunc OnDisplay str p1
+	work_len=p1
+	Repeat StrLen(work_len)
+		If cursor_x@+cnt>=(ginfo_winx/SIZE_X/(1+trans_c2n@)){
+			cursor_x@=-cnt
+			cursor_y@+
+		}
+		If cnt+cursor_x@<0{
+			cursor_x@=0
+		}
+		data@(cnt+cursor_x@,cursor_y@)=Peek(work_len,cnt)or(color_r@<<8)or(color_g@<<16)or(color_b@<<24)
+	Loop
+	Return
+
+#global
+
+	Screen 0,SIZE_X*MAX_X,800
+	keyboard_height=ginfo_winy-SIZE_Y*MAX_Y
+	function=1
+	Dim data,MAX_X,MAX_Y
+	Repeat
+		ReDraw 0
+		Color 0,0,0
+		BoxF 0,0,SIZE_X*MAX_X,SIZE_Y*MAX_Y
+		ReDraw 1
+		Await 15
+	Loop

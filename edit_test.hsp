@@ -1,0 +1,536 @@
+;===============================================================================
+;
+;					   RulerScroll for RichEdit ver 1.0
+;															by kz3  2006/04/20
+; * TAB = 2
+;===============================================================================
+
+#include "user32.as"
+#include "kernel32.as"
+#include "gdi32.as"
+
+onexit goto *hsp_exit
+
+	exist dir_cur + "/hsptmp": if strsize = -1: end
+	sdim script, strsize + 1
+	bload dir_cur+"/hsptmp", script, strsize, 0
+
+
+//////////////////////////////////////////////////////////////////////
+;
+; 定数
+;
+
+#define WS_CHILD						$40000000
+#define WS_VSCROLL					$00200000
+#define WS_HSCROLL					$00100000
+#define ES_AUTOVSCROLL			$0040
+#define ES_AUTOHSCROLL			$0080
+#define ES_MULTILINE				$0004
+#define ES_DISABLENOSCROLL	$00002000
+
+#define WM_USER							$0400
+
+#define WM_HSCROLL					$0114
+#define WM_VSCROLL					$0115
+#define WM_NOTIFY						$004E
+#define WM_COMMAND					$0111
+#define WM_TIMER						$0113
+
+#define EM_SETTABSTOPS					$00CB
+#define EM_GETRECT							$00B2
+#define EM_SETRECT							$00B3
+#define EM_GETFIRSTVISIBLELINE	$00CE
+#define EM_LINEINDEX						$00BB
+#define EM_GETLINECOUNT					$00BA
+
+#define EM_POSFROMCHAR			(WM_USER + 38)
+#define EM_SETBKGNDCOLOR		(WM_USER + 67)
+#define EM_GETCHARFORMAT		(WM_USER + 58)
+#define EM_SETCHARFORMAT		(WM_USER + 68)
+#define EM_GETEVENTMASK			(WM_USER + 59)
+#define EM_SETEVENTMASK			(WM_USER + 69)
+
+#define EN_CHANGE					$0300
+#define EN_HSCROLL				$0601
+#define EN_VSCROLL				$0602
+#define EN_MSGFILTER			$0700
+#define EN_REQUESTRESIZE	$0701
+#define EN_SELCHANGE			$0702
+
+#define ENM_CHANGE				$00000001
+#define ENM_SCROLL				$00000004
+#define ENM_SELCHANGE			$00080000
+#define ENM_SCROLLEVENTS	$00000008
+
+#define CFM_SIZE			$80000000
+#define CFM_COLOR			$40000000
+#define CFM_FACE			$20000000
+#define CFM_CHARSET		$08000000
+
+#define CFE_AUTOCOLOR	$40000000
+
+#define ANSI_CHARSET	0
+
+#define FIXED_PITCH		1
+
+#define SCF_ALL				$0004
+
+#define SIF_RANGE						$0001
+#define SIF_PAGE						$0002
+#define SIF_POS							$0004
+#define SIF_DISABLENOSCROLL	$0008
+#define SIF_TRACKPOS				$0010
+#define SIF_ALL							(SIF_RANGE | SIF_PAGE | SIF_POS | SIF_TRACKPOS)
+
+#define SB_HORZ	0
+#define SB_VERT	1
+
+#define SB_THUMBTRACK	5
+#define SB_ENDSCROLL	8
+
+#define LOGPIXELSY		90
+
+
+//////////////////////////////////////////////////////////////////////
+;
+; 構造体変数
+;
+
+// CHARFORMAT Structure
+	dim CHARFORMAT, 15
+
+		dup			cfmt_cbSize,			CHARFORMAT.0
+		dup			cfmt_dwMask,			CHARFORMAT.1
+		dup			cfmt_dwEffects,		CHARFORMAT.2
+		dup			cfmt_yHeight,			CHARFORMAT.3
+		dup			cfmt_yOffset,			CHARFORMAT.4
+		dup			cfmt_crTextColor,	CHARFORMAT.5
+
+		dupptr	cfmt_bCharSet,				 varptr( CHARFORMAT.6 )+0, 1
+		dupptr	cfmt_bPitchAndFamily,	varptr( CHARFORMAT.6 )+1, 1
+		dupptr	cfmt_szFaceName,			varptr( CHARFORMAT.6 )+2, 32, 2
+
+// TEXTMETRIC Structure
+	dim TEXTMETRIC, 14
+		dup			tmHeight,						TEXTMETRIC.0
+		dup			tmAscent,						TEXTMETRIC.1
+		dup			tmDescent,					TEXTMETRIC.2
+		dup			tmInternalLeading,	TEXTMETRIC.3
+		dup			tmExternalLeading,	TEXTMETRIC.4
+		dup			tmAveCharWidth,			TEXTMETRIC.5
+		dup			tmMaxCharWidth,			TEXTMETRIC.6
+		dup			tmWeight,						TEXTMETRIC.7
+		dup			tmOverhang,					TEXTMETRIC.8
+		dup			tmDigitizedAspectX,	TEXTMETRIC.9
+		dup			tmDigitizedAspectY,	TEXTMETRIC.10
+
+		dupptr	tmFirstChar,			varptr( TEXTMETRIC.11 )+0, 1
+		dupptr	tmLastChar,				varptr( TEXTMETRIC.11 )+1, 1
+		dupptr	tmDefaultChar,		varptr( TEXTMETRIC.11 )+2, 1
+		dupptr	tmBreakChar,			varptr( TEXTMETRIC.11 )+3, 1
+
+		dupptr	tmItalic,					varptr( TEXTMETRIC.12 )+0, 1
+		dupptr	tmUnderlined,			varptr( TEXTMETRIC.12 )+1, 1
+		dupptr	tmStruckOut,			varptr( TEXTMETRIC.12 )+2, 1
+		dupptr	tmPitchAndFamily,	varptr( TEXTMETRIC.12 )+3, 1
+
+		dupptr	tmCharSet,				varptr( TEXTMETRIC.13 )+0, 1
+
+// SCROLLINFO Structure( Horizon )
+	dim HORZ_SCROLLINFO, 7
+
+		dup hscr_cbSize,		HORZ_SCROLLINFO.0
+		dup hscr_fMask,			HORZ_SCROLLINFO.1
+		dup hscr_nMin,			HORZ_SCROLLINFO.2
+		dup hscr_nMax,			HORZ_SCROLLINFO.3
+		dup hscr_nPage,			HORZ_SCROLLINFO.4
+		dup hscr_nPos,			HORZ_SCROLLINFO.5
+		dup hscr_nTrackPos,	HORZ_SCROLLINFO.6
+
+
+//////////////////////////////////////////////////////////////////////
+;
+; メインウィンドウ作成( リッチエディットの下地 )
+;
+
+	LoadLibrary "riched32.dll": hLib = stat
+
+	screen 0, 640, 480, 2
+		hMain = hwnd
+
+	; リッチエディットコントロール1.0作成
+	dwStyle = $56000000|ES_MULTILINE|ES_DISABLENOSCROLL|ES_AUTOVSCROLL|ES_AUTOHSCROLL|WS_HSCROLL|WS_VSCROLL
+
+	winobj "RICHEDIT", "", $0200, dwStyle, ginfo_winx, ginfo_winy, 0, 0
+		iRich = stat: hRich = objinfo( iRich, 2 )
+
+		RichFontHeight	= 13
+		RichFontWidth		= RichFontHeight / 2 + RichFontHeight \ 2
+
+		syscolor 1
+		sendmsg hRich, EM_SETBKGNDCOLOR, 0, ginfo_b<<16|ginfo_g<<8|ginfo_r
+
+		RichViewHorzOffset = 2
+		RichViewVertOffset = 2
+
+	GetDC hRich: hdcRich = stat
+		GetDeviceCaps hdcRich, LOGPIXELSY: logpx = stat
+		GetTextMetrics hdcRich, varptr( TEXTMETRIC )
+		RichExtLeading = tmExternalLeading
+	ReleaseDC hRich, hdcRich
+
+
+//////////////////////////////////////////////////////////////////////
+;
+; 水平ルーラーウィンドウ作成( 列番号 )
+;
+
+	RulerHorzHeight = 16
+	dim rc, 4: GetClientRect hRich, varptr( rc )
+
+	bgscr 2, rc.2, RulerHorzHeight, 2, 0, 0
+		hRulerHorz = hwnd
+		GetWindowLong hwnd, -16
+		SetWindowLong hwnd, -16, stat & $7FFFFFFF | WS_CHILD
+		syscolor 4: boxf
+
+	scaleL = 0
+	scaleM = RulerHorzHeight/2
+	scaleS = RulerHorzHeight - RulerHorzHeight/4
+
+	SetParent hRulerHorz, hRich
+
+
+//////////////////////////////////////////////////////////////////////
+;
+; 垂直ルーラーウィンドウ作成( 行番号 )
+;
+	RulerVertDigit	= 8
+	RulerVertToSeparatorOffset		= 2
+	RulerVertWidth	= RichFontWidth * RulerVertDigit + RulerVertToSeparatorOffset
+
+	bgscr 3, RulerVertWidth, rc.3 - RulerHorzHeight, 2, 0, RulerHorzHeight
+		hRulerVert = hwnd
+		GetWindowLong hwnd, -16
+		SetWindowLong hwnd, -16, stat & $7FFFFFFF | WS_CHILD
+
+		SetParent hRulerVert, hRich
+
+	GetTextMetrics hdc, varptr( TEXTMETRIC )
+	RulerVertExtLeading = tmExternalLeading
+
+
+//////////////////////////////////////////////////////////////////////
+;
+; リッチエディットの各種設定
+;
+
+// 書式設定
+
+	cfmt_cbSize = 4*15
+
+	sendmsg hRich, EM_GETCHARFORMAT, 0, varptr( CHARFORMAT )
+
+		cfmt_dwMask  = CFM_SIZE | CFM_FACE | CFM_CHARSET | CFM_COLOR
+
+		cfmt_dwEffects				= cfmt_dwEffects & ($FFFFFFFF ^ CFE_AUTOCOLOR )
+		cfmt_yHeight					= RichFontHeight * 1440 / logpx
+
+		syscolor 9
+		cfmt_crTextColor			= ginfo_b<<16|ginfo_g<<8|ginfo_r
+
+		cfmt_bCharSet				= ANSI_CHARSET
+		cfmt_bPitchAndFamily	= FIXED_PITCH
+		cfmt_szFaceName			= "ＭＳ ゴシック"
+
+	sendmsg hRich, EM_SETCHARFORMAT, SCF_ALL, varptr( CHARFORMAT )
+
+	SetWindowText hRich, varptr( script )
+
+	RichTabStops = 2 * 4
+	sendmsg hRich, EM_SETTABSTOPS, 1, varptr( RichTabStops )
+
+// イベントマスク設定
+
+	sendmsg hRich, EM_GETEVENTMASK, 0, 0
+	dwMask = stat | ENM_SELCHANGE | ENM_SCROLLEVENTS | ENM_SCROLL | ENM_CHANGE
+	sendmsg hRich, EM_SETEVENTMASK, 0, dwMask
+
+// 表示領域設定
+
+	dim rcRichView, 4
+	sendmsg hRich, EM_GETRECT, 0, varptr( rcRichView )
+	rcRichView.0 += RulerVertWidth + RichViewHorzOffset
+	rcRichView.1 += RulerHorzHeight + RichViewVertOffset
+	sendmsg hRich, EM_SETRECT, 0, varptr( rcRichView )
+
+	sendmsg hRich, EM_POSFROMCHAR, 0, 0
+		mgnRichToChar = stat & $FFFF
+
+
+//////////////////////////////////////////////////////////////////////
+;
+; 水平ルーラーと行番号のフォント設定( GDI描画用 )
+;
+
+// 垂直ルーラーのフォント設定
+
+	gsel 3, 1
+
+		GetDC hRich: hdcRich = stat
+		GetTextMetrics hdcRich, varptr( TEXTMETRIC )
+		ReleaseDC hRich, hdcRich
+
+		mref bm3, 67
+		bm3.54 = cfmt_bCharSet<<24
+
+		font "ＭＳ ゴシック", RichFontHeight
+		fmtDigit = "%"+RulerVertDigit+"d"
+
+// 水平ルーラーのフォント設定
+
+	gsel 2, 1
+
+		mref bm2, 67
+		bm2.54 = cfmt_bCharSet<<24
+		font "ＭＳ ゴシック", RulerHorzHeight - RulerHorzHeight/4
+
+
+//////////////////////////////////////////////////////////////////////
+;
+; Windowsメッセージの割込み設定
+;
+
+	gsel 0, 1
+
+		objsel iRich
+
+		oncmd gosub *On_Notify,		WM_NOTIFY
+		oncmd gosub *On_Command,	WM_COMMAND
+		oncmd gosub *On_Timer,		WM_TIMER
+
+
+//////////////////////////////////////////////////////////////////////
+;
+; 最初の描画
+;
+
+	gsel 2
+
+	hscr_cbSize	= 28
+	hscr_fMask	= SIF_ALL|SIF_DISABLENOSCROLL
+
+	GetScrollInfo hRich, SB_HORZ, varptr( HORZ_SCROLLINFO )
+	gosub *drawRuler
+	hscr_prevPos = hscr_nPos
+
+	vRuler_limLine = ( rcRichView.3 - rcRichView.1 )/( RichExtLeading - RulerVertExtLeading + RichFontHeight )
+
+	sendmsg hRich, EM_GETLINECOUNT, 0, 0: vRuler_maxLine = stat
+	sendmsg hRich, EM_GETFIRSTVISIBLELINE, 0, 0: vRuler_nLine = stat
+	gosub *drawRulerVertLineNo
+	vRuler_prevLine = vRuler_nLine
+
+	stop
+
+
+//////////////////////////////////////////////////////////////////////
+;
+; Windowsメッセージ割込みルーチン
+;
+
+// タイマーイベント
+
+*On_Timer
+	switch( wparam )
+
+		case 1
+			sendmsg hRich, EM_GETFIRSTVISIBLELINE, 0, 0: vRuler_nLine = stat
+			if( vRuler_prevLine != vRuler_nLine): gosub *drawRulerVertLineNo
+			vRuler_prevLine = vRuler_nLine
+			swbreak
+
+	swend
+
+	return 0
+
+// コントロールからの通知メッセージ
+
+*On_Command
+	if( lparam != hRich ): return 0
+
+	switch( wparam>>16 & $FFFF )
+
+		case EN_HSCROLL
+			GetScrollInfo hRich, SB_HORZ, varptr( HORZ_SCROLLINFO )
+			if( hscr_nPos != hscr_prevPos ): gosub *drawRuler
+			hscr_prevPos = hscr_nPos
+			swbreak
+
+		case EN_VSCROLL
+			sendmsg hRich, EM_GETFIRSTVISIBLELINE, 0, 0: vRuler_nLine = stat
+			gosub *drawRulerVertLineNo
+			vRuler_prevLine = vRuler_nLine
+			swbreak
+
+		case EN_CHANGE
+
+			sendmsg hRich, EM_GETLINECOUNT, 0, 0: vRuler_maxLine = stat
+			sendmsg hRich, EM_GETFIRSTVISIBLELINE, 0, 0: vRuler_nLine = stat
+			gosub *drawRulerVertLineNo
+			vRuler_prevLine = vRuler_nLine
+
+			swbreak
+
+	swend
+
+	return 0
+
+// コントロールからの通知メッセージ
+
+*On_Notify
+	dupptr NMHDR, lparam, 12
+	if( NMHDR != hRich ): return 0
+
+	switch( NMHDR.2 )
+
+		case EN_SELCHANGE
+			GetScrollInfo hRich, SB_HORZ, varptr( HORZ_SCROLLINFO )
+			if( hscr_nPos != hscr_prevPos ): gosub *drawRuler
+			hscr_prevPos = hscr_nPos
+
+			sendmsg hRich, EM_GETFIRSTVISIBLELINE, 0, 0: vRuler_nLine = stat
+			gosub *drawRulerVertLineNo
+			vRuler_prevLine = vRuler_nLine
+			swbreak
+
+		case EN_MSGFILTER
+			dupptr MSGFILTER, lparam, 24
+			msg = MSGFILTER.3: wp = MSGFILTER.4: lp = MSGFILTER.5
+
+			if( msg == WM_HSCROLL )||( msg == WM_VSCROLL ): gosub *EditNotify_Scroll
+			swbreak
+
+	swend
+
+	return 0
+
+
+//////////////////////////////////////////////////////////////////////
+;
+; Notification スクロールメッセージルーチン
+;
+
+*EditNotify_Scroll
+	switch( msg )
+
+		case WM_HSCROLL
+			if( wp & $FFFF ) != SB_ENDSCROLL{
+				hscr_nPos = wp>>16 & $FFFF
+				gosub *drawRuler
+				hscr_prevPos = hscr_nPos
+			}
+			swbreak
+
+		case WM_VSCROLL
+			if( wp & $FFFF ) == SB_THUMBTRACK{
+				SetTimer hMain, 1, 10, 0
+			}
+			if( wp & $FFFF ) == SB_ENDSCROLL{
+				KillTimer hMain, 1
+			}
+
+			sendmsg hRich, EM_GETFIRSTVISIBLELINE, 0, 0: vRuler_nLine = stat
+			gosub *drawRulerVertLineNo
+			vRuler_prevLine = vRuler_nLine
+			swbreak
+
+	swend
+
+	return
+
+
+//////////////////////////////////////////////////////////////////////
+;
+; ルーラー描画ルーチン
+;
+
+*drawRuler
+	wid = ginfo_sel: gsel 2
+
+	syscolor 4: boxf 0, 0, ginfo_winx, RulerHorzHeight
+
+	CountStartRow = hscr_nPos / RichFontWidth
+	oxDrawScale = mgnRichToChar - hscr_nPos \ RichFontWidth
+
+	syscolor 7
+
+	redraw 0
+	repeat ( ginfo_winx - mgnRichToChar ) / RichFontWidth + 1
+		if( oxDrawScale+cnt*RichFontWidth < mgnRichToChar ): continue
+
+		switch ( CountStartRow + cnt ) \ 10
+
+			case 0
+				pos oxDrawScale+cnt*RichFontWidth+2, 0: mes ""+( CountStartRow + cnt)
+				line oxDrawScale+cnt*RichFontWidth, scaleL, oxDrawScale+cnt*RichFontWidth, RulerHorzHeight
+				swbreak
+
+			case 5
+				line oxDrawScale+cnt*RichFontWidth, scaleM, oxDrawScale+cnt*RichFontWidth, RulerHorzHeight
+				swbreak
+
+			default
+				line oxDrawScale+cnt*RichFontWidth, scaleS, oxDrawScale+cnt*RichFontWidth, RulerHorzHeight
+				swbreak
+
+		swend
+	loop
+
+	redraw 1
+
+	gsel wid
+
+	return
+
+// 垂直ルーラー( 行番号 )全体の描画
+
+*drawRulerVertLineNo
+	wid = ginfo_sel: gsel 3
+
+	redraw 0
+
+	syscolor 1: boxf
+	syscolor 4: line RulerVertWidth-1, -1, RulerVertWidth-1, ginfo_winy
+	syscolor 9
+
+	repeat limit(vRuler_maxLine - vRuler_nLine, vRuler_maxLine - vRuler_nLine, vRuler_limLine ), vRuler_nLine
+		sendmsg hRich, EM_LINEINDEX, cnt, 0
+		sendmsg hRich, EM_POSFROMCHAR, stat, 0
+		pt.0 = stat & $FFFF
+		pt.1 = stat>>16 & $FFFF
+
+		pos 0, pt.1 - RulerHorzHeight + tmExternalLeading
+		mes strf(fmtDigit,cnt+1)
+	loop
+
+	redraw 1
+
+	gsel wid
+
+	return
+
+
+//////////////////////////////////////////////////////////////////////
+;
+; HSPの終了処理
+;
+
+*hsp_exit
+	if( iparam == 0 ){
+		gsel 0
+		clrobj iRich
+		FreeLibrary hLib
+	}
+	end

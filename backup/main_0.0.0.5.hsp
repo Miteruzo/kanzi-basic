@@ -1,0 +1,46 @@
+;*******************************************************************************
+; ワﾟイル名  : main.hsp
+; 更新年月日 : 平30/04/24
+; 作成者     : Taker32X
+; 作成年月日 : 平30/04/24
+; 機能       : 漢字 BASIC のインタプリタ
+;*******************************************************************************
+
+;------------------------------------ TODO ------------------------------------
+
+;------------------------------------------------------------------------------
+
+#const MAJOR_VER 0
+#const MINOR_VER 0
+#const PATCH_VER 0
+#const BUILD_NUM 0
+#define PROJECT_NAME ("xime")
+#define PROJECT_FILE ("main.hsp")
+
+#addition "../mod_taker.as
+
+#uselib "user32
+#func SetWindowPos "SetWindowPos" sptr,sptr,sptr,sptr,sptr,sptr,sptr
+#cfunc GetWindowLong "GetWindowLongA" int,int
+#func SetWindowLong "SetWindowLongA" int,int,int
+#cfunc GetSystemMetrics "GetSystemMetrics" int
+#cfunc GetSystemMenu "GetSystemMenu" int,nullptr
+#func DeleteMenu "DeleteMenu" int,int,nullptr
+#func EnableWindow "EnableWindow" int,int
+#cfunc IsZoomed "IsZoomed" int
+#cfunc IsIconic "IsIconic" int
+#func CreateWindowEx "CreateWindowExA" int,str,str,int,int,int,int,int,int,int,int,int
+#func MoveWindow "MoveWindow" int,int,int,int,int,int
+#func SetFocus "SetFocus" int
+#cfunc GetDC "GetDC" int
+#func ReleaseDC "ReleaseDC" int,int
+#func SetTimer "SetTimer" sptr,sptr,sptr,sptr
+#func KillTimer "KillTimer" sptr,sptr
+#cfunc WaitForInputIdle "WaitForInputIdle" int,int
+
+#enum WINDOW_MAIN=0
+
+	Screen WINDOW_MAIN,ginfo_dispx,ginfo_dispy,SCREEN_HIDE
+	width 640,480
+	SetWindowLong hwnd,-16,GetWindowLong(hwnd,-16)or$50000
+	gSel WINDOW_MAIN,1

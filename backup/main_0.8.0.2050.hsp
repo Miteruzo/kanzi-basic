@@ -1,0 +1,4682 @@
+;*******************************************************************************
+; ÉèﬂÉCÉãñº  : main.hsp
+; çXêVîNåéì˙ : ïΩ30/12/28
+; çÏê¨é“     : Taker32X
+; çÏê¨îNåéì˙ : ïΩ30/04/24
+; ã@î\       : äøéö BASIC ÇÃÉCÉìÉ^ÉvÉäÉ^
+;*******************************************************************************
+
+;----------------------------------- ê{‡®éñ -----------------------------------
+;
+; àÍÅCçÏê›íËâÊñ ÅD
+;
+; ìÒÅCå¸è„ì¸óÕä¬ã´ÅD
+;
+; éOÅCçÏìπãÔóìó^èÛë‘óìÅD
+;
+; élÅCçÏ‚xà◊â¬èëï∂ÅD
+;
+;------------------------------------------------------------------------------
+
+#define global __COMPILE_HSP35__
+;#define global __COMPILE_ON_HSP3DISH__
+
+#const MAJOR_VER 0
+#const MINOR_VER 8
+#const PATCH_VER 0
+#const BUILD_NUM 1815
+#define PROJECT_NAME ("kb")
+#define PROJECT_FILE ("main.hsp")
+
+#addition "../mod_taker.as
+;#include "d3m.hsp
+
+#ifndef __COMPILE_ON_HSP3DISH__
+#include "../xime/mod_xime.as
+#include "hspsock.as
+#include "hspinet.as
+#include "mod_menu.as
+#include "mod_stbar.as
+#include "hspext.as
+#endif
+
+#ifdef __COMPILE_ON_HSP3DISH__
+#include "hsp3dish.as
+#endif
+
+#ifdef __BUILD_64BIT_MODE__
+#include "hsp3_64.as
+#endif
+
+#pack "statement.dat
+#pack "system.dat
+
+#ifndef __BUILD_64BIT_MODE__
+#packopt name "kanzi_basic
+#else
+#packopt name "kanzi_basic_64
+#endif
+#packopt hide 1
+#packopt version "version_kb.txt
+#packopt upx 1
+#packopt lang "1041
+
+#uselib "user32
+#cfunc GetWindowLong "GetWindowLongA" int,int
+#func SetWindowLong "SetWindowLongA" int,int,int
+#cfunc IsZoomed "IsZoomed" int
+#cfunc IsIconic "IsIconic" int
+;#func CreatePopupMenu "CreatePopupMenu"
+;#func AppendMenu "AppendMenuA" sptr,sptr,sptr,sptr
+#func TrackPopupMenu "TrackPopupMenu" sptr,sptr,sptr,sptr,sptr,sptr,sptr
+#func DestroyMenu "DestroyMenu" sptr
+#func keybd_event "keybd_event" int,int,int
+#func SetClassLong "SetClassLongA" int,int,int
+#func DeleteMenu "DeleteMenu" int,int,nullptr
+#cfunc GetSystemMenu "GetSystemMenu" int,int
+
+#uselib "kernel32
+#func CreateFileMapping "CreateFileMappingA" sptr,sptr,sptr,sptr,sptr,str
+#cfunc GetLastError "GetLastError"
+#func MapViewOfFile "MapViewOfFile" sptr,sptr,sptr,sptr,sptr
+#func UnmapViewOfFile "UnmapViewOfFile" sptr
+#func CloseHandle "CloseHandle" sptr
+
+#uselib "gdi32
+#func GetTextExtentPoint32 "GetTextExtentPoint32A" int,var,int,var
+#cfunc GetStockObject "GetStockObject" int
+
+#uselib "imm32
+#cfunc ImmCreateContext "ImmCreateContext
+#cfunc ImmAssociateContext "ImmAssociateContext" int,int
+#func ImmSetCompositionWindow "ImmSetCompositionWindow" int,var,int
+#func ImmGetCompositionString "ImmGetCompositionStringA" int,int,var,int
+#func ImmSetCompositionFont "ImmSetCompositionFontA" int,var
+#func ImmReleaseContext "ImmReleaseContext" int,int
+#func ImmDestroyContext "ImmDestroyContext" int
+#cfunc ImmGetContext "ImmGetContext" int
+
+#uselib "footy2
+#func Footy2Create "Footy2Create" int,int,int,int,int,int
+#func Footy2Delete "Footy2Delete" int
+#func Footy2TextFromFile "Footy2TextFromFileA" int,sptr,int
+#func Footy2AddEmphasis "Footy2AddEmphasisA" int,sptr,sptr,int,int,int,int,int,int
+#func Footy2FlushEmphasis "Footy2FlushEmphasis" int
+
+#const global EULER 2.7182818284590452354
+
+#const global SIZE_X 8
+#const global SIZE_Y 16
+#const global MAGNIFICATION 4
+
+#const global MAX_X 240
+#const global MAX_Y 120
+
+#define global FONT_NAME ("BatangChe")
+
+#const global KEY_MOUSE_L $01
+#const global KEY_MOUSE_R $02
+#const global KEY_BREAK $03
+#const global KEY_MOUSE_CENTRE $04
+#const global KEY_BS $08
+#const global KEY_TAB $09
+#const global KEY_RETURN $0D
+#const global KEY_SHIFT $10
+#const global KEY_CTRL $11
+#const global KEY_GRPH $12
+#const global KEY_ESC $1B
+#const global KEY_SPACE $20
+#const global KEY_ROLLDOWN $21
+#const global KEY_ROLLUP $22
+#const global KEY_LEFT $25
+#const global KEY_UP $26
+#const global KEY_RIGHT $27
+#const global KEY_DOWN $28
+#const global KEY_INS $2D
+#const global KEY_DEL $2E
+#const global KEY_APP $5D
+#const global KEY_NUM_0 $60
+#const global KEY_NUM_1 $61
+#const global KEY_NUM_2 $62
+#const global KEY_NUM_3 $63
+#const global KEY_NUM_4 $64
+#const global KEY_NUM_5 $65
+#const global KEY_NUM_6 $66
+#const global KEY_NUM_7 $67
+#const global KEY_NUM_8 $68
+#const global KEY_NUM_9 $69
+#const global KEY_NUM_AST $6A
+#const global KEY_NUM_PLS $6B
+#const global KEY_NUM_MNS $6D
+#const global KEY_NUM_DOT $6E
+#const global KEY_NUM_SLSH $6F
+#const global KEY_F1 $70
+#const global KEY_F2 $71
+#const global KEY_F3 $72
+#const global KEY_F4 $73
+#const global KEY_F5 $74
+#const global KEY_F6 $75
+#const global KEY_F7 $76
+#const global KEY_F8 $77
+#const global KEY_F9 $78
+#const global KEY_F10 $79
+#const global KEY_F11 $7A
+#const global KEY_F12 $7B
+#const global KEY_ASTERISK $BA
+#const global KEY_PLUS $BB
+#const global KEY_COMMA $BC
+#const global KEY_MINUS $BD
+#const global KEY_DOT $BE
+#const global KEY_SLASH $BF
+#const global KEY_AT $C0
+#const global KEY_BRACE_L $DB
+#const global KEY_PIPE $DC
+#const global KEY_BRACE_R $DD
+#const global KEY_HAT $DE
+#const global KEY_BAR $E2
+
+#const global WM_SIZE $0005
+#const global WM_NOTIFY $004E
+#const global WM_SYSKEYDOWN $0104
+;#const global WM_COMMAND $0111
+
+#const global SB_SETTEXT $0401
+#const global SB_SETPARTS $0404
+
+#const global KEYEVENTF_EXTENDEDKEY 1
+#const global KEYEVENTF_KEYUP 2
+
+#const global KEYBOARD_POS_X 0
+#const global KEYBOARD_POS_Y 1
+#const global KEYBOARD_SIZE_X 2
+#const global KEYBOARD_SIZE_Y 3
+
+#const global FILE_MAP_WRITE $02
+#const global FILE_MAP_READ $04
+#const global PAGE_READWRITE $04
+#const global ERROR_ALREADY_EXISTS $B7
+
+#const global DEFAULT_GUI_FONT $11
+
+#const global SC_MINIMIZE $F020
+#const global SC_MAXIMIZE $F030
+#const global SC_RESTORE $F120
+#const global SC_SIZE $F000
+
+#const global GCL_HICON (-14)
+#const global GCL_HICONSM (-34)
+
+#const global GWL_STYLE (-16)
+#const global GWL_EXSTYLE (-20)
+
+#const global WS_EX_DLGMODALFRAME $00000001
+#const global WS_MINIMIZEBOX $00020000
+#const global WS_CLIPCHILDREN $02000000
+#const global WS_VISIBLE $10000000
+#const global WS_CHILD $40000000
+
+#define ctype InKey(%1) If ((key_(mode_vertical@*((%1==KEY_LEFT)*KEY_UP+(%1==KEY_UP)*KEY_RIGHT+(%1==KEY_RIGHT)*KEY_DOWN+(%1==KEY_DOWN)*KEY_LEFT)+(%1!=KEY_LEFT&&%1!=KEY_UP&&%1!=KEY_RIGHT&&%1!=KEY_DOWN||mode_vertical@==0)*%1)==0||key_(mode_vertical@*((%1==KEY_LEFT)*KEY_UP+(%1==KEY_UP)*KEY_RIGHT+(%1==KEY_RIGHT)*KEY_DOWN+(%1==KEY_DOWN)*KEY_LEFT)+(%1!=KEY_LEFT&&%1!=KEY_UP&&%1!=KEY_RIGHT&&%1!=KEY_DOWN||mode_vertical@==0)*%1)>=32)&&key_(mode_vertical@*((%1==KEY_LEFT)*KEY_UP+(%1==KEY_UP)*KEY_RIGHT+(%1==KEY_RIGHT)*KEY_DOWN+(%1==KEY_DOWN)*KEY_LEFT)+(%1!=KEY_LEFT&&%1!=KEY_UP&&%1!=KEY_RIGHT&&%1!=KEY_DOWN||mode_vertical@==0)*%1)\3==0&&key(mode_vertical@*((%1==KEY_LEFT)*KEY_UP+(%1==KEY_UP)*KEY_RIGHT+(%1==KEY_RIGHT)*KEY_DOWN+(%1==KEY_DOWN)*KEY_LEFT)+(%1!=KEY_LEFT&&%1!=KEY_UP&&%1!=KEY_RIGHT&&%1!=KEY_DOWN||mode_vertical@==0)*%1))
+
+#enum global WINDOW_MAIN=0
+#enum global WINDOW_FULL
+#enum global WINDOW_CONSOLE
+#enum global WINDOW_GRAPHIC
+#enum global WINDOW_EDIT
+#enum global WINDOW_PARAMETER
+#enum global WINDOW_EXTEND
+#enum global WINDOW_MARK
+#enum global WINDOW_LABOR
+#enum global WINDOW_WORK
+#enum global WINDOW_CONFIG
+#enum global WINDOW_VIEW
+#enum global WINDOW_BACKGROUND
+#enum global WINDOW_TAB_COLOUR
+#enum global WINDOW_TAB_VIEW
+#enum global WINDOW_TAB_CONTROL
+#enum global WINDOW_TAB_DATE
+#enum global WINDOW_TAB_OTHERS
+#enum global WINDOW_FREE	; àÍî‘â∫Ç…íuÇ≠éñÅD
+
+#enum global CALC_PLUS=1
+#enum global CALC_MINUS
+#enum global CALC_TIMES
+#enum global CALC_DIV
+#enum global CALC_EQUAL
+#enum global CALC_NOT_EQUAL
+#enum global CALC_GREAT
+#enum global CALC_LESS
+#enum global CALC_GREAT_EQUAL
+#enum global CALC_LESS_EQUAL
+#enum global CALC_FRACT
+#enum global CALC_AND
+#enum global CALC_OR
+#enum global CALC_XOR
+#enum global CALC_POWER
+#enum global CALC_POLAR
+
+#enum global ERROR_NONE=0
+#enum global ERROR_SYNTAX
+#enum global ERROR_FILE_NOT_FOUND
+#enum global ERROR_OUT_OF_RANGE
+#enum global ERROR_LINE_NOT_FOUND
+#enum global ERROR_ZERO_DIV
+#enum global ERROR_RETURN_WITHOUT_GOSUB
+#enum global ERROR_READ_WITHOUT_DATA
+#enum global ERROR_ILLEGAL_CALL
+#enum global ERROR_NEXT_WITHOUT_FOR
+#enum global ERROR_SERVER_NOT_FOUND
+#enum global ERROR_NOT_CONNECT_YET
+#enum global ERROR_TYPE_MISMATCH
+#enum global ERROR_COMPARISON_IN_COMPLEX
+#enum global ERROR_OVERFLOW
+
+#enum global MENU_MAIN=0
+#enum global MENU_FILE
+#enum global MENU_EDIT
+#enum global MENU_VIEW
+#enum global MENU_CONTROL
+#enum global MENU_HELP
+
+#enum global COMMAND_MENUBAR=1
+#enum global COMMAND_TOOLBAR
+#enum global COMMAND_QUIT
+#enum global COMMAND_NEW
+#enum global COMMAND_LOAD
+#enum global COMMAND_SAVE
+#enum global COMMAND_STATUSBAR
+#enum global COMMAND_RUN
+#enum global COMMAND_BREAK
+#enum global COMMAND_MARK
+#enum global COMMAND_LIST
+#enum global COMMAND_CUT
+#enum global COMMAND_COPY
+#enum global COMMAND_PASTE
+#enum global COMMAND_DEL
+
+#enum global FILE_INPUT=0
+#enum global FILE_OUTPUT
+#enum global FILE_APPEND
+#enum global FILE_RANDOM
+#enum global FILE_PLAY
+
+#enum global COLOUR_NONE=0
+#enum global COLOUR_STATEMENT
+#enum global COLOUR_SYSTEM
+#enum global COLOUR_PARTICLE
+#enum global COLOUR_NUMBER
+
+#undef Sin
+#undef Cos
+#undef Tan
+
+#module SuperCalc
+
+#defcfunc Sin double p1
+	Switch p1\Deg2Rad(360)
+		Case Deg2Rad(0)
+		Case Deg2Rad(180)
+			Return 0.
+		Case Deg2Rad(30)
+		Case Deg2Rad(150)
+			Return 0.5
+		Case Deg2Rad(90)
+			Return 1.
+		Case Deg2Rad(210)
+		Case Deg2Rad(330)
+			Return -0.5
+		Case Deg2Rad(270)
+			Return -1.
+		Default
+			Return Sin@hsp(p1)
+	SwEnd
+
+#defcfunc Cos double p1
+	Switch p1\Deg2Rad(360)
+		Case Deg2Rad(0)
+			Return 1.
+		Case Deg2Rad(60)
+		Case Deg2Rad(300)
+			Return 0.5
+		Case Deg2Rad(90)
+		Case Deg2Rad(270)
+			Return 0.
+		Case Deg2Rad(120)
+		Case Deg2Rad(240)
+			Return -0.5
+		Case Deg2Rad(180)
+			Return -1.
+		Default
+			Return Cos@hsp(p1)
+	SwEnd
+
+#defcfunc Tan double p1
+	Switch p1\Deg2Rad(180)
+		Case Deg2Rad(0)
+			Return 0.
+		Case Deg2Rad(45)
+			Return 1.
+		Case Deg2Rad(90)
+			Return PowF(10,309)
+		Case Deg2Rad(135)
+			Return -1
+		Default
+			Return Tan@hsp(p1)
+	SwEnd
+
+#global
+
+#module Misc
+
+#defcfunc HowMany str p1,str p2
+	work=p1
+	Split work,p2
+	Return stat-1
+
+#defcfunc StrMid2 int p2,int p3
+	work="
+	Repeat p3
+		work+StrF("%c",data@(cnt+p2,cursor_y@)and$FF)
+	Loop
+	Return work
+
+#global
+
+#module Graphic
+
+#deffunc BoxSub int p1,int p2,int p3,int p4
+	work=ginfo_sel
+	color_r=ginfo_r
+	color_g=ginfo_g
+	color_b=ginfo_b
+	gSel WINDOW_WORK
+	Color 255-color_r,255-color_g,255-color_b
+	BoxF 0,0,p3-p1,p4-p2
+	gSel work
+	gMode GMODE_SUB,p3-p1+1,p3-p1+1,256
+	Pos p1,p2
+	Color 0,0,0
+	gCopy WINDOW_WORK,0,0,p3-p1+1,p4-p2+1
+	Return
+
+#global
+
+#module Basic
+
+#uselib "kernel32
+#func Beep "Beep" int,int
+#func LCMapString "LCMapStringA" int,int,sptr,int,var,int
+#cfunc GetUserDefaultLCID "GetUserDefaultLCID
+
+#uselib "user32
+#func DestroyMenu "DestroyMenu" sptr
+#cfunc GetWindowLong "GetWindowLongA" int,int
+#func SetWindowLong "SetWindowLongA" int,int,int
+#func SetWindowPos "SetWindowPos" sptr,sptr,sptr,sptr,sptr,sptr,sptr
+#cfunc GetSystemMenu "GetSystemMenu" int,nullptr
+#func DeleteMenu "DeleteMenu" int,int,nullptr
+#func EnableWindow "EnableWindow" int,int
+
+#deffunc OnDisplay str p1
+	If trans_c2n@{
+		work_len=""
+		LCMapString GetUserDefaultLCID(),$00800000,p1,-1,work_len,0
+		LCMapString GetUserDefaultLCID(),$00800000,p1,-1,work_len,stat
+	}Else{
+		work_len=p1
+	}
+	Repeat StrLen(work_len)
+		If cursor_x@+cnt>=(ginfo_winx/SIZE_X/(1+trans_c2n@)){
+			cursor_x@=-cnt
+			cursor_y@+
+		}
+		If cnt+cursor_x@<0{
+			cursor_x@=0
+		}
+		data@(cnt+cursor_x@,cursor_y@)=Peek(work_len,cnt)or(color_r@<<8)or(color_g@<<16)or(color_b@<<24)
+	Loop
+	Return
+
+#defcfunc FromDisplay int p1,int p2
+	Return StrF("%c",Peek(data@,4*(MAX_X*p2+p1)))
+
+#deffunc ScrollDisplay int p1
+	cursor_y@-p1
+	If p1>0{
+		Repeat MAX_X*(MAX_Y-p1)
+			data@(cnt\MAX_X,Limit(cnt/MAX_X,0,MAX_Y-1))=data@(cnt\MAX_X,Limit(cnt/MAX_X+p1,0,MAX_Y-1))
+			data_work@(cnt\MAX_X,cnt/MAX_X)=0
+		Loop
+	}Else{
+		Repeat MAX_X*(MAX_Y+p1)
+			data@(cnt\MAX_X,Limit(MAX_Y-cnt/MAX_X-1,0,(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))/SIZE_Y-function@-1))=data@(cnt\MAX_X,Limit(MAX_Y-cnt/MAX_X+p1-1,0,(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))/SIZE_Y-function@-1))
+			data_work@(cnt\MAX_X,Limit(MAX_Y-cnt/MAX_X-1,0,(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))/SIZE_Y-function@-1))=0
+		Loop
+		Repeat -p1*MAX_X
+			data@(cnt\MAX_X,cnt/MAX_X)=0
+		Loop
+	}
+	Return
+
+#deffunc local ChangeCalcMode
+	If minus{
+		Complex line_num,-Cmp2Real(line_num),-Cmp2Img(line_num)
+		Complex line_1st,-Cmp2Real(line_1st),-Cmp2Img(line_1st)
+		minus=0
+	}
+	decimal=0
+	AddC line_num,line_num,line_1st
+	Switch calc_mode
+		Case CALC_PLUS
+			AddC number_god,number_god,line_num
+			SwBreak
+		Case CALC_MINUS
+			SubC number_god,number_god,line_num
+			SwBreak
+		Case CALC_TIMES
+			MultiC number_god,number_god,line_num
+			SwBreak
+		Case CALC_DIV
+			If Cmp2Real(line_num)!=0||Cmp2Img(line_num)!=0{
+				LogMes StrF("%f,%f",Cmp2Real(number_god),Cmp2Img(number_god))
+				LogMes StrF("%f,%f",Cmp2Real(line_num),Cmp2Img(line_num))
+				DevisC number_god,number_god,line_num
+				LogMes StrF("%f,%f",Cmp2Real(number_god),Cmp2Img(number_god))
+			}Else{
+				error=ERROR_ZERO_DIV
+			}
+			SwBreak
+		Case CALC_EQUAL
+			Complex number_god,Cmp2Real(number_god)==Cmp2Real(line_num)&&Cmp2Img(number_god)==Cmp2Img(line_num),0
+			SwBreak
+		Case CALC_NOT_EQUAL
+			Complex number_god,Cmp2Real(number_god)!=Cmp2Real(line_num)||Cmp2Img(number_god)!=Cmp2Img(line_num),0
+			SwBreak
+		Case CALC_GREAT
+			If Cmp2Real(number_god)==0&&Cmp2Real(line_num)==0{
+				Complex number_god,Cmp2Img(number_god)>Cmp2Img(line_num)
+			}Else: If Cmp2Img(number_god)==0&&Cmp2Img(line_num)==0{
+				Complex number_god,Cmp2Real(number_god)>Cmp2Real(line_num)
+			}Else{
+				error=ERROR_COMPARISON_IN_COMPLEX
+			}
+			SwBreak
+		Case CALC_LESS
+			If Cmp2Real(number_god)==0&&Cmp2Real(line_num)==0{
+				Complex number_god,Cmp2Img(number_god)<Cmp2Img(line_num)
+			}Else: If Cmp2Img(number_god)==0&&Cmp2Img(line_num)==0{
+				Complex number_god,Cmp2Real(number_god)<Cmp2Real(line_num)
+			}Else{
+				error=ERROR_COMPARISON_IN_COMPLEX
+			}
+			SwBreak
+		Case CALC_GREAT_EQUAL
+			If Cmp2Real(number_god)==0&&Cmp2Real(line_num)==0{
+				Complex number_god,Cmp2Img(number_god)>=Cmp2Img(line_num)
+			}Else: If Cmp2Img(number_god)==0&&Cmp2Img(line_num)==0{
+				Complex number_god,Cmp2Real(number_god)>=Cmp2Real(line_num)
+			}Else{
+				error=ERROR_COMPARISON_IN_COMPLEX
+			}
+			SwBreak
+		Case CALC_LESS_EQUAL
+			If Cmp2Real(number_god)==0&&Cmp2Real(line_num)==0{
+				Complex number_god,Cmp2Img(number_god)<=Cmp2Img(line_num)
+			}Else: If Cmp2Img(number_god)==0&&Cmp2Img(line_num)==0{
+				Complex number_god,Cmp2Real(number_god)<=Cmp2Real(line_num)
+			}Else{
+				error=ERROR_COMPARISON_IN_COMPLEX
+			}
+			SwBreak
+		Case CALC_FRACT
+			If Cmp2Real(number_god)!=0||Cmp2Img(number_god)!=0{
+				DevisC number_god,line_num,number_god
+			}Else{
+				error=ERROR_ZERO_DIV
+			}
+			SwBreak
+		Case CALC_AND
+			Complex number_god,Int(Cmp2Real(number_god))and Int(Cmp2Real(line_num)),0
+			SwBreak
+		Case CALC_OR
+			Complex number_god,Int(Cmp2Real(number_god))or Int(Cmp2Real(line_num)),0
+			SwBreak
+		Case CALC_XOR
+			Complex number_god,Int(Cmp2Real(number_god))xor Int(Cmp2Real(line_num)),0
+			SwBreak
+		Case CALC_POWER
+			PowC number_god,number_god,line_num
+			SwBreak
+		Case CALC_POLAR
+			Complex number_god,Cmp2Real(number_god)*Cos(Cmp2Real(line_num)),Cmp2Real(number_god)*Sin(Cmp2Real(line_num))
+			SwBreak
+		Default
+			CmpCpy number_god,line_num
+			SwBreak
+	SwEnd
+	Complex line_1st,0,0
+	Complex line_num,0,0
+	Return
+
+#deffunc local CalcFunction
+	AddC line_num,line_num,line_1st
+	Complex line_1st,0,0
+	data_read_flag=1
+	Switch StrMid(reading,j,6)
+		Case "ïΩï˚ç™"
+			PowC2@Comp line_num,line_num,1./2
+			j+4
+			data_read_flag=0
+			SwBreak
+		Case "óßï˚ç™"
+			PowC2@Comp line_num,line_num,1./3
+			j+4
+			data_read_flag=0
+			SwBreak
+		Case "ê‚õîíl"
+			Complex line_num,AbsC(line_num),0
+			j+4
+			data_read_flag=0
+			SwBreak
+	SwEnd
+	Switch StrMid(reading,j,4)
+		Case "ê≥å∑"
+			SinC line_num,line_num
+			j+2
+			data_read_flag=0
+			SwBreak
+		Case "ÈPå∑"
+			CosC line_num,line_num
+			j+2
+			data_read_flag=0
+			SwBreak
+		Case "ê≥ê⁄"
+			TanC line_num,line_num
+			j+2
+			data_read_flag=0
+			SwBreak
+		Case "ïÑÂj"
+			If Cmp2Real(line_num)>0{
+				Complex line_num,1,0
+			}Else: If Cmp2Real(line_num)<0{
+				Complex line_num,-1,0
+			}Else{
+				Complex line_num,0,0
+			}
+			If Cmp2Img(line_num)>0{
+				AddC line_num,0,1
+			}Else: If Cmp2Img(line_num)<0{
+				AddC line_num,0,-1
+			}
+			j+2
+			data_read_flag=0
+			SwBreak
+		Case "èäéw"
+		Case "èäé¶"
+			flag=0
+			Repeat j-3
+				cnt_=cnt
+				Repeat memory_num@
+					If StrMid(reading,j-(j-cnt_),j-cnt_-2)==memory_name@(cnt){
+						Complex line_num,VarPtr(memory_data@(cnt)),0
+						flag=1
+						Break
+					}
+				Loop
+				If flag: Break
+			Loop
+			If flag==0{
+				memory_name@(memory_num@)=StrMid(reading,0,j-2)
+				Complex memory_data@(memory_num@),0,0
+				right_man(memory_num@)=0
+				Complex line_num,VarPtr(memory_data@(memory_num@))
+				memory_num@+
+			}
+			j+2
+			data_read_flag=0
+			SwBreak
+		Case "ïΩï˚"
+			PowC2@Comp line_num,line_num,2
+			j+2
+			data_read_flag=0
+			SwBreak
+		Case "óßï˚"
+			PowC2@Comp line_num,line_num,3
+			j+2
+			data_read_flag=0
+			SwBreak
+		Case "éüï˚"
+			j+2
+			data_read_flag=0
+			SwBreak
+		Case "Átäp"
+		Case "ïùäp"
+		Case "ïŒäp"
+			Complex line_num,Arg(line_num),0
+			j+2
+			data_read_flag=0
+			SwBreak
+		Case "õîù…"
+			LogC line_num,line_num
+			j+2
+			data_read_flag=0
+			SwBreak
+	SwEnd
+	Switch StrMid(reading,j,2)
+		Case "ò™"
+			Complex line_num,Rnd(Cmp2Real(line_num)),0
+			data_read_flag=0
+			SwBreak
+		Case "åä"
+		Case "çE"
+			DupPtr work_x,Int(Cmp2Real(line_num)),1,VarType("str")
+			Complex line_num,Peek(work_x,0),0
+			Dim work_x
+			data_read_flag=0
+			SwBreak
+		Case "îΩ"
+			Complex line_num,Int(Cmp2Real(line_num))xor$FFFFFFFF,0
+			data_read_flag=0
+			SwBreak
+		Case "õâ"
+			Complex line_num,Cmp2Real(line_num),0
+			data_read_flag=0
+			SwBreak
+		Case "ìx"
+			Complex line_num,Rad2Deg(Cmp2Real(line_num)),Rad2Deg(Cmp2Img(line_num))
+			data_read_flag=0
+			SwBreak
+	SwEnd
+	If data_read_flag{
+		If InStr(reading,j,"éüï˚")!=-1{
+			ChangeCalcMode
+			calc_mode=CALC_POWER
+			j-2
+		}
+	}
+	Return
+
+#defcfunc Kan2Arabia str p1,int p2
+	reading=p1
+	Complex line_1st,0,0
+	Complex line_num,0,0
+	Complex number_god,0,0
+	calc_mode=CALC_PLUS
+	minus=0
+	decimal=0
+	Repeat memory_num@
+		Split reading,memory_name@(cnt),left_man
+		right_man(cnt)=StrLen(left_man)
+	Loop
+	For j,0,StrLen(reading)
+		Repeat 9
+			If StrMid(reading,j,2)==number@(cnt){
+				If decimal{
+					Complex line_1st,Cmp2Real(line_1st)+PowF(10,-decimal)*(cnt+1),0
+					decimal+
+				}Else{
+					Complex line_1st,cnt+1,0
+				}
+				Break
+			}
+		Loop
+		Repeat 3
+			If StrMid(reading,j,2)==number@(cnt+9){
+				Complex line_num,Cmp2Real(line_num)+((Cmp2Real(line_1st)+(Cmp2Real(line_1st)==0))*(cnt+1))*10,0
+				Complex line_1st,0,0
+				Break
+			}
+		Loop
+		Repeat 2
+			If StrMid(reading,j,2)==number@(cnt+12){
+				Complex line_num,Cmp2Real(line_num)+(Cmp2Real(line_1st)+(Cmp2Real(line_1st)==0))*Int(PowF(10,cnt+2)),0
+				Complex line_1st,0,0
+				Break
+			}
+		Loop
+		Repeat 12
+			If StrMid(reading,j,2)==number@(cnt+14){
+				Complex line_num,(Cmp2Real(line_num)+Cmp2Real(line_1st)+(Cmp2Real(line_num)+Cmp2Real(line_1st)==0))*PowF(10000,cnt+1),0
+				Complex line_1st,0,0
+				Break
+			}
+		Loop
+		ForEach color_list@
+			If StrMid(reading,j,StrLen(color_list@(cnt)))==color_list@(cnt){
+				Complex line_num,cnt,0
+				Complex line_1st,0,0
+				j+StrLen(color_list@(cnt))-2
+				Break
+			}
+		Loop
+		Switch StrMid(reading,j,6)
+			Case "ïsìôâó"
+				ChangeCalcMode
+				calc_mode=CALC_NOT_EQUAL
+				j+4
+				SwBreak
+			Case "ö¢é¸ó¶"
+				Complex line_num,M_PI,0
+				Complex line_1st,0,0
+				j+4
+				SwBreak
+		SwEnd
+		Switch StrMid(reading,j,4)
+			Case "ò©à»"
+				ChangeCalcMode
+				calc_mode=CALC_TIMES
+				j+2
+				SwBreak
+			Case "èúà»"
+				ChangeCalcMode
+				calc_mode=CALC_DIV
+				j+2
+				SwBreak
+			Case "ìôâó"
+				Switch calc_mode
+					Case CALC_GREAT
+						calc_mode=CALC_GREAT_EQUAL
+						SwBreak
+					Case CALC_LESS
+						calc_mode=CALC_LESS_EQUAL
+						SwBreak
+					Default
+						ChangeCalcMode
+						calc_mode=CALC_EQUAL
+						SwBreak
+				SwEnd
+				j+2
+				SwBreak
+			Case "ëÂâó"
+				ChangeCalcMode
+				calc_mode=CALC_GREAT
+				j+2
+				SwBreak
+			Case "è¨âó"
+				ChangeCalcMode
+				calc_mode=CALC_LESS
+				j+2
+				SwBreak
+			Case "ï™îV"
+				ChangeCalcMode
+				calc_mode=CALC_FRACT
+				j+2
+				_Continue
+				SwBreak
+			Case "åÆíÜ"
+				Complex line_num,0,0
+				Repeat 242
+					If GetKey2(cnt){
+						Complex line_num,cnt,0
+						Break
+					}
+				Loop
+				Complex line_1st,0,0
+				j+2
+				SwBreak
+		SwEnd
+		Switch StrMid(reading,j,2)
+			Case "â¡"
+				ChangeCalcMode
+				calc_mode=CALC_PLUS
+				SwBreak
+			Case "å∏"
+				ChangeCalcMode
+				calc_mode=CALC_MINUS
+				SwBreak
+			Case "óÎ"
+			Case "ÅZ"
+				If decimal{
+					decimal+
+				}Else{
+					Complex line_num,0,0
+					Complex line_1st,0,0
+				}
+				SwBreak
+			Case "îV"
+				j+2
+				CalcFunction
+				SwBreak
+			Case "ïâ"
+				minus=1
+				SwBreak
+			Case "ìx"
+				Complex line_num,Deg2Rad(Cmp2Real(line_num)+Cmp2Real(line_1st)),Deg2Rad(Cmp2Img(line_num)+Cmp2Img(line_1st))
+				Complex line_1st,0,0
+				SwBreak
+			Case "ïb"
+				Complex line_num,(Cmp2Real(line_num)+Cmp2Real(line_1st))*1000,(Cmp2Img(line_num)+Cmp2Img(line_1st))*1000
+				Complex line_1st,0,0
+				SwBreak
+			Case "ÉŒ"
+			Case "ôY"
+				Complex line_num,M_PI,0
+				Complex line_1st,0,0
+				SwBreak
+			Case "ÇÖ"
+			Case "Çd"
+				Complex line_num,EULER,0
+				Complex line_1st,0,0
+				SwBreak
+			Case "Íy"
+				decimal=1
+				SwBreak
+			Case "ë¥"
+				CmpCpy line_num,that_stat@
+				Complex line_1st,0,0
+				SwBreak
+			Case "ïù"
+				Complex line_num,ginfo_winx/SIZE_X/(1+trans_c2n@),(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))/SIZE_Y
+				Complex line_1st,0,0
+				SwBreak
+			Case "çÇ"
+				Complex line_num,(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))/SIZE_Y,0
+				Complex line_1st,0,0
+				SwBreak
+			Case "êF"
+				Complex line_num,color_r@/255<<1 or color_g@/255<<2 or color_b@/255,0
+				Complex line_1st,0,0
+				SwBreak
+			Case "„§"
+				#ifndef __COMPILE_ON_HSP3DISH__
+					SockOpen@ 0,"www.google.co.jp",80
+					If stat{
+						Complex line_num,0,0
+					}Else{
+						Complex line_num,1,0
+					}
+					SockClose@ 0
+				#else
+					Complex line_num,0,0
+				#endif
+				Complex line_1st,0,0
+				SwBreak
+			Case "ët"
+				#ifndef __BUILD_64BIT_MODE__
+					Complex line_num,mmlChk(),0
+				#else
+					Complex line_num,0,0
+				#endif
+				Complex line_1st,0,0
+				SwBreak
+			Case "‰o"
+				ChangeCalcMode
+				calc_mode=CALC_AND
+				SwBreak
+			Case "àΩ"
+				ChangeCalcMode
+				calc_mode=CALC_OR
+				SwBreak
+			Case "ãï"
+			Case "Çâ"
+			Case "Çh"
+				Complex line_num,-(Cmp2Img(line_num)+Cmp2Img(line_1st)),Cmp2Real(line_num)+Cmp2Real(line_1st)+(Cmp2Real(line_num)+Cmp2Real(line_1st)==0&&Cmp2Img(line_num)+Cmp2Img(line_1st)==0)
+				Complex line_1st,0,0
+				SwBreak
+			Case "äp"
+			Case "Å⁄"
+				ChangeCalcMode
+				calc_mode=CALC_POLAR
+				SwBreak
+		SwEnd
+		Switch StrMid(reading,j,1)
+			Case "i"
+			Case "I"
+				Complex line_num,-(Cmp2Img(line_num)+Cmp2Img(line_1st)),Cmp2Real(line_num)+Cmp2Real(line_1st)+(Cmp2Real(line_num)+Cmp2Real(line_1st)==0&&Cmp2Img(line_num)+Cmp2Img(line_1st)==0)
+				Complex line_1st,0,0
+				SwBreak
+			Case "e"
+			Case "E"
+				Complex line_num,EULER,0
+				Complex line_1st,0,0
+				SwBreak
+		SwEnd
+		Repeat memory_num@
+			If j==right_man(cnt){
+				CmpCpy line_num,memory_data@(cnt)
+				Complex line_1st,0,0
+				j+StrLen(memory_name@(cnt))-2
+				Break
+			}
+		Loop
+	Next
+	ChangeCalcMode
+	If p2==0{
+		number_god=Cmp2Real(number_god)
+	}Else{
+		number_god=Cmp2Img(number_god)
+	}
+	Return number_god
+
+#defcfunc Arabia2Kan double p1,double p2
+	work_num=p1
+	If p1<200000{
+		work_num2=StrF("%.300g",p1)
+	}Else{
+		work_num2=StrF("%.300e",p1)
+		Split work_num2,"e",work_num2
+		If stat>1{
+			work_num2(0)=StrTrim(work_num2(0),2,'0')+"e"+work_num2(1)
+		}
+	}
+	If InStr(work_num2,0,"e")==-1{
+		If work_num<0{
+			number_pay="ïâ
+		}Else{
+			number_pay=""
+		}
+		work_num=AbsF(work_num)
+		If 0.<=work_num&&work_num<1{
+			number_pay+"óÎ
+		}Else{
+			work_digit=Int(LogF(work_num)/LogF(10)+0.000000000000001*(work_num-Int(work_num)==0))+1
+			Repeat work_digit
+				If work_num/PowF(10,work_digit-cnt-1)\10==0{
+					If (work_digit-cnt-1)\4==0{
+						Switch (work_digit-cnt-1)/4
+							Case 1
+								Repeat 14
+									If StrMid(number_pay,StrLen(number_pay)-2,2)==number@(cnt){
+										number_pay+"‰›
+										Break
+									}
+								Loop
+								SwBreak
+							Case 2
+								Repeat 15
+									If StrMid(number_pay,StrLen(number_pay)-2,2)==number@(cnt){
+										number_pay+"â≠
+										Break
+									}
+								Loop
+								SwBreak
+							Case 3
+								Repeat 16
+									If StrMid(number_pay,StrLen(number_pay)-2,2)==number@(cnt){
+										number_pay+"íõ
+										Break
+									}
+								Loop
+								SwBreak
+							Case 4
+								Repeat 17
+									If StrMid(number_pay,StrLen(number_pay)-2,2)==number@(cnt){
+										number_pay+"ãû
+										Break
+									}
+								Loop
+								SwBreak
+							Case 5
+								Repeat 18
+									If StrMid(number_pay,StrLen(number_pay)-2,2)==number@(cnt){
+										number_pay+"ö¥
+										Break
+									}
+								Loop
+								SwBreak
+						SwEnd
+					}
+					Continue
+				}
+				If work_num/PowF(10,work_digit-cnt-1)\10>=2+((work_digit-cnt-1)\4==1)*2||((work_digit-cnt-1)\4==0&&Int(work_num/PowF(10,work_digit-cnt-1)\10)!=0){
+					number_pay+number@(Int(work_num/PowF(10,work_digit-cnt-1)\10-1))
+				}
+				If (work_digit-cnt-1)\4{
+					Switch (work_digit-cnt-1)\4
+						Case 1
+							If Int(work_num/10/PowF(10,work_digit-cnt-2)\10)!=0{
+								Switch Int(work_num/PowF(10,work_digit-cnt-1)\10)
+									Case 2
+										If Int(work_num/PowF(10,work_digit-cnt-2)\10)==0{
+											number_pay+"ìÒè\
+										}Else{
+											number_pay+"ì˘
+										}
+										SwBreak
+									Case 3
+										If Int(work_num/PowF(10,work_digit-cnt-2)\10)==0{
+											number_pay+"éOè\
+										}Else{
+											number_pay+"ôø
+										}
+										SwBreak
+									Default
+										If Int(work_num/PowF(10,work_digit-cnt-2)\100)==10{
+											number_pay+"àÍ
+										}
+										number_pay+"è\
+										SwBreak
+								SwEnd
+							}
+							SwBreak
+						Case 2
+							If Int(work_num/100/PowF(10,work_digit-cnt-3)\10)!=0{
+								If Int(work_num/PowF(10,work_digit-cnt-3)\1000)==100{
+									number_pay+"àÍ
+								}
+								number_pay+"ïS
+							}
+							SwBreak
+						Case 3
+							If Int(work_num/1000/PowF(10,work_digit-cnt-4)\10)!=0{
+								If Int(work_num/PowF(10,work_digit-cnt-4)\10000)==1000{
+									number_pay+"àÍ
+								}
+								number_pay+"êÁ
+							}
+							SwBreak
+					SwEnd
+				}Else{
+					Switch (work_digit-cnt-1)/4
+						Case 1
+							number_pay+"‰›
+							SwBreak
+						Case 2
+							number_pay+"â≠
+							SwBreak
+					SwEnd
+				}
+			Loop
+		}
+	}Else{
+		work_num_=work_num
+		work_num2_=work_num2
+		number_pay_=number_pay
+		number_pay=Arabia2Kan(Int(work_num2),0)
+		work_num=work_num_
+		work_num2=work_num2_
+	}
+	If number_pay==""||number_pay=="ïâ"{
+		number_pay+"óÎ
+	}
+	Split work_num2,".",work_num2
+	If stat>1{
+		number_pay+"Íy
+		If StrMid(work_num2(1),0,1)=="#"{
+			error=ERROR_OVERFLOW
+		}Else{
+			Repeat StrLen(work_num2(1))
+				Switch StrMid(work_num2(1),cnt,1)
+					Case "0"
+						number_pay+"óÎ
+						SwBreak
+					Case "e"
+						work_num_=work_num
+						work_num2_=work_num2
+						work_num2_(1)=work_num2(1)
+						number_pay_=number_pay
+						number_pay_+"ò©à»àÍè\îV"+Arabia2Kan(Int(StrMid(work_num2(1),cnt+1,StrLen(work_num2(1))-(cnt+1))),0)+"éüï˚
+						work_num=work_num_
+						work_num2=work_num2_
+						work_num2(1)=work_num2_(1)
+						number_pay=number_pay_
+						Break
+						SwBreak
+					Default
+						number_pay+number@(Int(StrMid(work_num2(1),cnt,1))-1)
+						SwBreak
+				SwEnd
+			Loop
+		}
+	}
+	StrRep number_pay,"Íyò©","ò©
+	If p2!=0.{
+		number_pay__=number_pay
+		If number_pay__!="óÎ"{
+			If p2>0{
+				If p2!=1{
+					number_pay=number_pay__+"â¡"+Arabia2Kan(p2,0)+"ãï
+				}Else{
+					number_pay=number_pay__+"â¡ãï
+				}
+			}Else{
+				If p2!=-1{
+					number_pay=Arabia2Kan(p2,0)
+					number_pay=number_pay__+"å∏"+StrMid(number_pay,2,StrLen(number_pay)-2)+"ãï
+				}Else{
+					number_pay=number_pay__+"å∏ãï
+				}
+			}
+		}Else{
+			If p2==1{
+				number_pay="ãï
+			}Else: If p2==-1{
+				number_pay="ïâãï
+			}Else{
+				number_pay=Arabia2Kan(p2,0)+"ãï
+			}
+		}
+	}
+	Return number_pay
+
+#defcfunc GetKey2 int p1
+	GetKey key,p1
+	Return key
+
+#deffunc CheckSentence str p1
+	string=p1
+	error=ERROR_SYNTAX
+	reading="
+	If StrMid(string,StrLen(string)-2,2)=="ÅB"{
+		String=StrMid(string,0,StrLen(string)-2)
+	}
+	For i,0,StrLen(string)
+		reading+StrMid(string,i,1)
+		Switch reading
+			Case "ñ≈ñã"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				If work==""{
+					work="àÍ"
+				}
+				If Int(Kan2Arabia(work))and 1{
+					Repeat MAX_X*MAX_Y
+						data@(cnt\MAX_X,cnt/MAX_X)=0
+					Loop
+					gSel WINDOW_CONSOLE
+;					gSel WINDOW_LABOR
+					Color 0,0,0
+					BoxF
+					gSel WINDOW_BACKGROUND
+					Color colour_r@,colour_g@,colour_b@
+					BoxF
+					If mode_full@{
+						gSel WINDOW_FULL
+					}Else{
+						gSel WINDOW_MAIN
+					}
+					cursor_x@=0
+					cursor_y@=0
+					error=0
+					GoSub *Refresh@
+				}
+				If Int(Kan2Arabia(work))and 2{
+					gSel WINDOW_GRAPHIC
+					ClS 4
+					If mode_full@{
+						gSel WINDOW_FULL
+					}Else{
+						gSel WINDOW_MAIN
+					}
+					error=0
+				}
+				SwBreak
+			Case "åæ"
+			Case "â]"
+			Case "à‡"
+			Case "ûH"
+			Case "ãL"
+			Case "ÅH"
+			Case "?"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				carry=0
+				If StrMid(work,StrLen(work)-2,2)=="„î"{
+					work=StrMid(work,0,StrLen(work)-2)
+					carry=1
+				}
+				Split work,"Åu",work
+				If stat>1{
+					Split work(1),"Åv",work
+					OnDisplay work(0)
+					that_stat_s@=work(0)
+					If carry{
+						cursor_x@+StrLen(work(0))
+						If cursor_x@>=ginfo_winx/(SIZE_X*(1+trans_c2n@)){
+							cursor_y@+
+							cursor_x@\(ginfo_winx/(SIZE_X*(1+trans_c2n@)))
+						}
+					}Else{
+						cursor_y@+
+						cursor_x@=0
+					}
+				}Else: If StrMid(work,0,2)=="ï∂"{
+					sDim work_start,256,1
+					sDim work_end,256,1
+					Split work,"ò∏",work_start
+					Split work,"ìû",work_end
+					Split work_start(1),"ìû",work_start
+					Split work_end(1),"ò∏",work_end
+					If work_start==""{
+						list_start@=1
+					}Else{
+						list_start@=Int(Kan2Arabia(work_start))
+					}
+					If work_end==""{
+						list_end@=Length(program@)
+					}Else{
+						list_end@=Int(Kan2Arabia(work_end))
+					}
+					If list_start@<=list_end@{
+						list_current@=list_start@
+						listing@=1
+						GoSub *BuildMenu@
+					}Else{
+						listing@=0
+						GoSub *BuildMenu@
+					}
+				}Else: If StrMid(work,0,2)=="èë"{
+					#ifndef __COMPILE_ON_HSP3DISH__
+						DirList files_list@,"*.*"
+						NoteSel files_list@
+							Repeat notemax
+								NoteGet work3,cnt
+								FxShort@ work3,work3
+								Exist work3
+								If strsize==-1{
+									Repeat 13-StrLen(work3)
+										work3+" "
+									Loop
+									work3+"<ñ⁄ò^>
+									NoteAdd work3,cnt,1
+								}Else{
+									work4=GetPath(work3,1)
+									Repeat 9-StrLen(work4)
+										work4+" "
+									Loop
+									work3=GetPath(work3,2)
+									Repeat 5-StrLen(work3)
+										work3+" "
+									Loop
+									work4+StrMid(work3,1,StrLen(work3)-1)
+									work4+StrF("%8d",strsize)
+									NoteAdd work4,cnt,1
+								}
+							Loop
+						NoteUnsel
+						filesing@=1
+						files_current@=0
+					#endif
+				}Else: If StrMid(work,StrLen(work)-2,2)=="ï§"{
+					Repeat memory_num_s@
+						If StrMid(work,0,StrLen(work)-2)==memory_name_s@(cnt){
+							work=memory_data_s@(cnt)
+							Break
+						}
+						If cnt==memory_num_s@-1{
+							work=""
+						}
+					Loop
+					OnDisplay work
+					that_stat_s@=work
+					If carry{
+						cursor_x@+StrLen(work)
+						If cursor_x@>=ginfo_winx/(SIZE_X*(1+trans_c2n@)){
+							cursor_y@+
+							cursor_x@\(ginfo_winx/(SIZE_X*(1+trans_c2n@)))
+						}
+					}Else{
+						cursor_y@+
+						cursor_x@=0
+					}
+				}Else: If work!=""{
+					If 0*Arabia2Kan(Kan2Arabia(work,0),Kan2Arabia(work,1))	; è¡ÇµÇƒÇÕÇ»ÇÁÇ ÅD
+					If error!=ERROR_ZERO_DIV&&error!=ERROR_COMPARISON_IN_COMPLEX&&error!=ERROR_OVERFLOW{
+						OnDisplay Arabia2Kan(Kan2Arabia(work,0),Kan2Arabia(work,1))
+						Complex that_stat@,Kan2Arabia(work,0),Kan2Arabia(work,1)
+						If carry{
+							cursor_x@+StrLen(Arabia2Kan(Kan2Arabia(work,0),Kan2Arabia(work,1)))
+							If mode_vertical@{
+								If cursor_x@>=(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel)-function@*SIZE_Y)/(SIZE_X*(1+trans_c2n@)){
+									cursor_y@+cursor_x@/((ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel)-function@*SIZE_Y)/(SIZE_X*(1+trans_c2n@)))
+									cursor_x@\((ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel)-function@*SIZE_Y)/(SIZE_X*(1+trans_c2n@)))
+								}
+							}Else{
+								If cursor_x@>=ginfo_winx/(SIZE_X*(1+trans_c2n@)){
+									cursor_y@+cursor_x@/(ginfo_winx/(SIZE_X*(1+trans_c2n@)))
+									cursor_x@\(ginfo_winx/(SIZE_X*(1+trans_c2n@)))
+								}
+							}
+						}Else{
+							cursor_y@+
+							cursor_x@=0
+						}
+					}Else: _Break
+				}Else{
+					cursor_y@+
+				}
+				error=0
+				SwBreak
+			Case "éöêFê•"
+			Case "êFê•"
+				work=Int(Kan2Arabia(StrMid(string,i+1,StrLen(string)-(i+1))))
+				color_r@=((work and 2)!=0)*255 or 1
+				color_g@=((work and 4)!=0)*255 or 1
+				color_b@=(work and 1)*255 or 1
+				error=0
+				SwBreak
+			Case "ñãêFê•"
+				work=Int(Kan2Arabia(StrMid(string,i+1,StrLen(string)-(i+1))))
+				colour_r@=((work and 2)!=0)*255
+				colour_g@=((work and 4)!=0)*255
+				colour_b@=(work and 1)*255
+				error=0
+				SwBreak
+			Case "ñ¬"
+			Case "öì"
+				Beep 880,500
+				error=0
+				SwBreak
+			Case "ëñ"
+				run_mode@=1
+				run_line@=0
+				st_program@=""
+				GoSub *BuildMenu@
+				data_read_num@=0
+				read_data_num@=0
+				error=0
+				SwBreak
+			Case "èI"
+				run_mode@=0
+				st_program@=""
+				GoSub *BuildMenu@
+				error=0
+				SwBreak
+			Case "ëﬁ"
+				Command COMMAND_QUIT
+			Case "ãé"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				If StrMid(work,0,2)=="éü"{
+					If foring{
+						CheckSentence for_mem(foring-1)+"ê•"+for_mem(foring-1)+"â¡"+Arabia2Kan(for_step(foring-1),0)
+						If Kan2Arabia(for_mem(foring-1))>for_goal(foring-1){
+							foring-1
+						}Else{
+							run_line@=for_line(foring-1)
+							If run_mode@==0{
+								run_mode@=1
+								GoSub *BuildMenu@
+							}
+						}
+						error=0
+					}Else{
+						error=ERROR_NEXT_WITHOUT_FOR
+					}
+				}Else{
+					If StrMid(work,0,2)=="éq"{
+						return_line(subroutine)=run_line@
+						subroutine+
+						work=StrMid(work,2,StrLen(work)-2)
+					}
+					If 1<=Kan2Arabia(work)&&Int(Kan2Arabia(work))<=Length(program@){
+						run_line@=Int(Kan2Arabia(work))-2
+						If run_mode@==0{
+							run_mode@=1
+							GoSub *BuildMenu@
+						}
+						error=0
+					}Else{
+						error=ERROR_OUT_OF_RANGE
+					}
+				}
+				SwBreak
+			Case "ïùê•"
+				If mode_vertical@{
+					Width Int(Kan2Arabia(StrMid(string,i+1,StrLen(string)-(i+1))))*SIZE_Y*(1+trans_c2n@)+gosa_x@,ginfo_winy+gosa_y@
+				}Else{
+					Width Int(Kan2Arabia(StrMid(string,i+1,StrLen(string)-(i+1))))*SIZE_X*(1+trans_c2n@)+gosa_x@,ginfo_winy+gosa_y@
+				}
+				If Kan2Arabia(StrMid(string,i+1,StrLen(string)-(i+1)),1)>=1{
+					CheckSentence "çÇê•"+Arabia2Kan(Kan2Arabia(StrMid(string,i+1,StrLen(string)-(i+1)),1),0)
+				}
+				error=0
+				SwBreak
+			Case "çÇê•"
+				If mode_vertical@{
+					Width ginfo_winx+gosa_x@,Int(Kan2Arabia(StrMid(string,i+1,StrLen(string)-(i+1))))*SIZE_X+statusbar@*stbar_sy@stbar(ginfo_sel)+gosa_y@
+				}Else{
+					Width ginfo_winx+gosa_x@,Int(Kan2Arabia(StrMid(string,i+1,StrLen(string)-(i+1))))*SIZE_Y+statusbar@*stbar_sy@stbar(ginfo_sel)+gosa_y@
+				}
+				error=0
+				SwBreak
+			Case "Ê§"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				Split work,"Åu",work
+				If stat>1{
+					Split work(1),"Åv",work
+					Exist work(0)
+					If strsize!=-1{
+						sDim program@,256,65529
+						NoteSel work2
+							NoteLoad work(0)
+							Repeat notemax
+								NoteGet work3,cnt
+								Split work3,"ÅC",work4
+								program@(Int(Kan2Arabia(work4(0))-1))=work3
+							Loop
+						NoteUnsel
+/*						sDim work2,256*Length(program@)
+						bLoad work(0),work2
+						ForEach program@
+							MemCpy program@(cnt),work2,256,0,256*cnt
+						Loop	*/
+						error=0
+					}Else{
+						error=ERROR_FILE_NOT_FOUND
+					}
+				}
+				SwBreak
+			Case "èë"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				Split work,"Åu",work
+				If stat>1{
+					Split work(1),"Åv",work
+					work2="
+					ForEach program@
+						If program@(cnt)!=""{
+							work2+program@(cnt)+"\n
+						}
+					Loop
+					NoteSel work2
+						NoteSave work(0)
+					NoteUnsel
+					error=0
+				}Else{
+					error=ERROR_FILE_NOT_FOUND
+				}
+				SwBreak
+			Case "ñ≈ï∂"
+				sDim program@,256,65529
+				error=0
+				SwBreak
+			Case "·`"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				If StrMid(work,0,4)=="Íyâó"{
+					work=StrMid(work,4,StrLen(work)-4)
+					Split work,"‰o",work
+					Repeat 2
+						If StrMid(work(cnt),0,4)=="à‹ê•"{
+							graph_x@=Int(Kan2Arabia(StrMid(work(cnt),4,StrLen(work(cnt))-4)))
+						}Else: If StrMid(work(cnt),0,4)=="„Sê•"{
+							graph_y@=Int(Kan2Arabia(StrMid(work(cnt),4,StrLen(work(cnt))-4)))
+						}
+					Loop
+					Split work,"êFê•",gcolour
+					work_r=gcolor_r@
+					work_g=gcolor_g@
+					work_b=gcolor_b@
+					If stat>1{
+						CheckSentence "·`êFê•"+gcolour(1)
+					}
+					gSel WINDOW_GRAPHIC
+					Color gcolor_r@,gcolor_g@,gcolor_b@
+					pSet graph_x@,graph_y@
+					gcolor_r@=work_r
+					gcolor_g@=work_g
+					gcolor_b@=work_b
+					If mode_full@{
+						gSel WINDOW_FULL
+					}Else{
+						gSel WINDOW_MAIN
+					}
+					error=0
+				}Else: If StrMid(work,0,4)=="ê¸âó"{
+					work=StrMid(work,4,StrLen(work)-4)
+					StrRep work,"ÅC","‰o
+					Split work,"ò∏",work_start
+					Split work,"ìû",work_end
+					Split work_start(1),"‰o",work_start
+					SPlit work_start(1),"ìû",work_start(1)
+					Split work_end(1),"‰o",work_end
+					Split work_end(1),"ò∏",work_end(1)
+					Repeat 2
+						If StrMid(work_start(cnt),0,4)=="à‹ê•"{
+							graph_x@=Int(Kan2Arabia(StrMid(work_start(cnt),4,StrLen(work_start(cnt))-4)))
+						}Else: If StrMid(work_start(cnt),0,4)=="„Sê•"{
+							graph_y@=Int(Kan2Arabia(StrMid(work_start(cnt),4,StrLen(work_start(cnt))-4)))
+						}
+					Loop
+					Split work,"êFê•",gcolour
+					work_r=gcolor_r@
+					work_g=gcolor_g@
+					work_b=gcolor_b@
+					If stat>1{
+						CheckSentence "·`êFê•"+gcolour(1)
+					}
+					gSel WINDOW_GRAPHIC
+					Color gcolor_r@,gcolor_g@,gcolor_b@
+					Line graph_x@,graph_y@,graph_x@,graph_y@
+					gcolor_r@=work_r
+					gcolor_g@=work_g
+					gcolor_b@=work_b
+					Repeat 2
+						If StrMid(work_end(cnt),0,4)=="à‹ê•"{
+							graph_x@=Int(Kan2Arabia(StrMid(work_end(cnt),4,StrLen(work_end(cnt))-4)))
+						}Else: If StrMid(work_end(cnt),0,4)=="„Sê•"{
+							graph_y@=Int(Kan2Arabia(StrMid(work_end(cnt),4,StrLen(work_end(cnt))-4)))
+						}
+					Loop
+					Line graph_x@,graph_y@
+					pSet graph_x@,graph_y@
+					If mode_full@{
+						gSel WINDOW_FULL
+					}Else{
+						gSel WINDOW_MAIN
+					}
+					error=0
+				}Else: If StrMid(work,0,4)=="ö¢âó"{
+				}Else: If StrMid(work,0,4)=="êFê•"{
+					work=Int(Kan2Arabia(StrMid(work,4,StrLen(work)-4)))
+					gcolor_r@=((work and 2)!=0)*255 or 1
+					gcolor_g@=((work and 4)!=0)*255 or 1
+					gcolor_b@=(work and 1)*255 or 1
+					error=0
+				}Else{
+					Split work,"Åu",work
+					If stat>1{
+						Split work(1),"Åv",work
+						Exist work(0)
+						If strsize!=-1{
+							gSel WINDOW_GRAPHIC
+							PicLoad work(0),1
+							If mode_full@{
+								gSel WINDOW_FULL
+							}Else{
+								gSel WINDOW_MAIN
+							}
+							error=0
+						}Else{
+							error=ERROR_FILE_NOT_FOUND
+						}
+					}
+				}
+				SwBreak
+			Case "ï“èS"
+				program_text@="
+				ForEach program@
+					If program@(cnt)!=""{
+						program_text@+program@(cnt)+"\n
+					}
+				Loop
+				gSel WINDOW_EDIT,1
+				ObjPrm 0,program_text@
+				If mode_full@{
+					gSel WINDOW_FULL
+				}Else{
+					gSel WINDOW_MAIN
+				}
+				error=0
+				SwBreak
+			Case "âó"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				work_x=cursor_x@
+				work_y=cursor_y@
+				Split work,"‰o",work
+				Repeat 2
+					If StrMid(work(cnt),0,4)=="à‹ê•"{
+						cursor_x@=Int(Kan2Arabia(StrMid(work(cnt),4,StrLen(work(cnt))-4)))
+					}Else: If StrMid(work(cnt),0,4)=="„Sê•"{
+						cursor_y@=Int(Kan2Arabia(StrMid(work(cnt),4,StrLen(work(cnt))-4)))
+					}
+				Loop
+				If 0<=cursor_x@&&cursor_x@<ginfo_winx/(SIZE_X*(1+trans_c2n@))&&0<=cursor_y@&&cursor_y@<(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))/SIZE_Y{
+					error=0
+				}Else{
+					cursor_x@=work_x
+					cursor_y@=work_y
+					error=ERROR_OUT_OF_RANGE
+				}
+				SwBreak
+			Case "é·"
+			Case "î@"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				Split work,"ë•",work(0),work(1)
+				If stat<=1{
+					Split work,"ë¶",work(0),work(1)
+					If stat<=1{
+						Split work,"îT",work(0),work(1)
+					}
+				}
+				Split work(1),"ïsëR",work(1),work(2)
+				If Int(Kan2Arabia(work(0))){
+					string=work(1)
+				}Else{
+					If work(2)==""{
+						error=0
+					}
+					string=work(2)
+				}
+				reading="
+				i=-1
+				_Continue
+				SwBreak
+			Case "ñ≈‰I"
+				memory_num@=0
+				sDim memory_name@,256,1
+				dDim memory_data@,1
+				memory_num_s@=0
+				sDim memory_name_s@,256,1
+				sDim memory_data_s@,256,1
+				error=0
+				SwBreak
+			Case "ùæ"
+			Case "î["
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				StrRep work,"‰o","ÅC
+				Split work,"ÅC",work
+				Repeat stat
+					data_read@(data_read_num@)=Kan2Arabia(work(cnt))
+					data_read_num@+
+				Loop
+				error=0
+				SwBreak
+			Case "ùU"
+			Case "è¥"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				StrRep work,"‰o","ÅC
+				Split work,"ÅC",work
+				If read_data_num@+stat>data_read_num@{
+					error=ERROR_READ_WITHOUT_DATA
+				}Else{
+					Repeat stat
+						CheckSentence work(cnt)+"ê•"+Arabia2Kan(data_read@(read_data_num@),0)
+						read_data_num@+
+					Loop
+					error=0
+				}
+				SwBreak
+			Case "âØ·`"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				Split work,"Åu",work
+				If stat>1{
+					Split work(1),"Åv",work
+					Exist work(0)
+					If strsize!=-1{
+						Buffer WINDOW_FREE+data_graphic@
+						PicLoad work(0)
+						data_graphic@+
+						If mode_full@{
+							gSel WINDOW_FULL
+						}Else{
+							gSel WINDOW_MAIN
+						}
+						error=0
+					}Else{
+						error=ERROR_FILE_NOT_FOUND
+					}
+				}
+				SwBreak
+			Case "Å¶"
+				error=0
+				SwBreak
+			Case "âÒ"
+			Case "ñﬂ"
+			Case "üd"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				Switch StrMid(work,0,2)
+					Case "ùU"
+					Case "è¥"
+					Case "ùæ"
+					Case "î["
+						read_data_num@=0
+						error=0
+						SwBreak
+					Default
+						If subroutine{
+							subroutine-
+							run_line@=return_line(subroutine)
+							error=0
+						}Else{
+							error=ERROR_RETURN_WITHOUT_GOSUB
+						}
+						SwBreak
+				SwEnd
+				SwBreak
+			Case "õîâó"
+			Case "Ëêâó"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				Split work,"ê•",work_pi
+				If stat>1{
+					Split work_pi(1),"ìû",work_wei
+					If stat>1{
+						Split work_wei(1),"ñà",work_goal
+						If stat>1{
+							work_step=Kan2Arabia(work_goal(1))
+						}Else{
+							work_step=1.
+						}
+					}Else{
+						work_goal="óÎ"
+					}
+					for_goal(foring)=Kan2Arabia(work_goal)
+					LogMes work_step
+					for_step(foring)=work_step
+					for_line(foring)=run_line@
+					for_mem(foring)=work_pi
+					CheckSentence work_pi+"ê•"+work_wei
+;					for_num(foring)=work_let_num
+					foring+
+					error=0
+				}Else{
+					error=ERROR_ILLEGAL_CALL
+				}
+				SwBreak
+			Case "ëN"
+				GoSub *Refresh@
+				error=0
+				SwBreak
+			Case "ö”"
+			Case "í‚"
+			Case "õﬂ"
+			Case "é~"
+			Case "ÁÜ"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				If StrMid(work,0,2)=="ët"{
+					#ifndef __COMPILE_ON_HSP3DISH__
+						#ifndef __BUILD_64BIT_MODE__
+							mmlStop
+						#endif
+					#endif
+					error=0
+				}Else{
+					If run_mode@||listing@||filesing@{
+						Beep 880,500
+						If run_mode@{
+							OnDisplay "ö”âó"+work_line@+"ÅB
+							st_program@=program@(run_line@)
+						}Else{
+							OnDisplay "ö”ÅB
+						}
+						cursor_x@=0
+						cursor_y@+
+						If run_mode@==0{
+							OnDisplay "çDÅB
+							cursor_y@+
+						}
+						run_mode@=0
+						GoSub *BuildMenu@
+					}
+					inputting@=0
+					error=0
+				}
+				SwBreak
+			Case "íWö”ët"
+			Case "íWí‚ët"
+			Case "íWõﬂët"
+			Case "íWé~ët"
+			Case "íWÁÜët"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				#ifndef __COMPILE_ON_HSP3DISH__
+					#ifndef __BUILD_64BIT_MODE__
+						Switch StrMid(work,0,2)
+							Case "ìû"
+							Case "éä"
+								mmlStop Kan2Arabia(StrMid(work,2,StrLen(work)-2))/1000
+								SwBreak
+							Default
+								If work==""{
+									mmlStop 2
+								}Else{
+									mmlStop Kan2Arabia(work)/1000
+								}
+								SwBreak
+						SwEnd
+					#endif
+				#endif
+				error=0
+				SwBreak
+			Case "àœÂj"
+				mode_auto@=1
+				auto_num@=10
+				auto_inc@=10
+				error=0
+				SwBreak
+			Case "ët"
+				#ifndef __COMPILE_ON_HSP3DISH__
+					#ifndef __BUILD_64BIT_MODE__
+						work=StrMid(string,i+1,StrLen(string)-(i+1))
+						If StrMid(work,0,2)=="ëÊ"{
+							If Kan2Arabia(StrMid(work,2,StrLen(work)-2))-1>=0{
+								If file_mode@(Int(Kan2Arabia(StrMid(work,2,StrLen(work)-2)))-1)==FILE_PLAY{
+									mmlPlay (Int(Kan2Arabia(StrMid(work,2,StrLen(work)-2)))-1)
+									error=0
+								}Else{
+									error=ERROR_TYPE_MISMATCH
+								}
+							}Else{
+								error=ERROR_OUT_OF_RANGE
+							}
+						}Else{
+							Split work,"Åu",work
+							If stat>1{
+								Split work(1),"Åv",work
+								ForEach replace_from@
+									StrRep work(0),replace_from@(cnt),replace_to@(cnt)
+								Loop
+								StrRep work(0),"â©è‡â≥","a
+								StrRep work(0),"â©è‡","c
+								StrRep work(0),"ëÂòC","c+
+								StrRep work(0),"ëæ‚∆","d
+								StrRep work(0),"öÒè‡","d+
+								StrRep work(0),"å∆êÙ","e
+								StrRep work(0),"íáòC","f
+								StrRep work(0),"Ê≥ïo","f+
+								StrRep work(0),"ó—è‡","g
+								StrRep work(0),"àŒë•","g+
+								StrRep work(0),"ìÏòC","a
+								StrRep work(0),"ñ≥éÀ","a+
+								StrRep work(0),"ú‰è‡","b
+								StrRep work(0),"ö„âz","d
+								StrRep work(0),"ù–ã‡","d+
+								StrRep work(0),"ïΩí≤","e
+								StrRep work(0),"èüê‚","f
+								StrRep work(0),"â∫ñ≥","f+
+								StrRep work(0),"ô‘í≤","g
+								StrRep work(0),"ÈËè‡","g+
+								StrRep work(0),"Íaãæ","a+
+								StrRep work(0),"î’è¬","b
+								StrRep work(0),"ê_êÂ","c^
+								StrRep work(0),"è„ñ≥","c^+
+								StrRep work(0),"ëΩ","c
+								StrRep work(0),"ò“","d
+								StrRep work(0),"ïƒ","e
+								StrRep work(0),"·¢","f
+								StrRep work(0),"ûà","g
+								StrRep work(0),"ùf","a
+								StrRep work(0),"êº","b
+								If StrMid(work(0),StrLen(work(0))-1,1)=="\\"{
+									If VarType(saving_mml)==VarType("str"){
+										saving_mml+StrMid(work(0),0,StrLen(work(0))-1)
+									}Else{
+										saving_mml=StrMid(work(0),0,StrLen(work(0))-1)
+									}
+								}Else{
+									If VarType(saving_mml)==VarType("str"){
+										mmlPlay saving_mml+work(0)
+									}Else{
+										mmlPlay work(0)
+									}
+									saving_mml=""
+								}
+							}
+							error=0
+						}
+					#else
+						Dialog "ÅuëtÅvï∂ÇÕ 64 à å≥î≈Ç…ëŒâûÇµÇƒãèÇ‹ÇπÇÒÅD"
+						error=0
+					#endif
+				#else
+					Dialog "ÅuëtÅvï∂ÇÕ Android î≈Ç…ëŒâûÇµÇƒãèÇ‹ÇπÇÒÅD"
+					error=0
+				#endif
+				SwBreak
+			Case "è„„§"
+				#ifndef __COMPILE_ON_HSP3DISH__
+					SockOpen@ 0,"www.google.co.jp",80
+					If stat{
+						error=ERROR_SERVER_NOT_FOUND
+					}Else{
+						NetInit@
+						If stat{
+							error=ERROR_SERVER_NOT_FOUND
+						}Else{
+							Dialog "ìd„§Ç…ê⁄ë±ÇµÇ‹ÇµÇΩÅD
+							network@=1
+							error=0
+						}
+					}
+					SockClose@ 0
+				#else
+					error=ERROR_SERVER_NOT_FOUND
+				#endif
+				SwBreak
+			Case "â∫„§"
+				#ifndef __COMPILE_ON_HSP3DISH__
+					If network@{
+						NetTerm@
+						Dialog "ìd„§Ç©ÇÁêÿífÇµÇ‹ÇµÇΩÅD
+						network@=0
+					}
+				#endif
+				error=0
+				SwBreak
+			Case "äJ"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				Split work,"Åu",work
+				If stat>1{
+					Split work(1),"Åv",work
+					Exist work(0)
+					If strsize==-1{
+						error=ERROR_FILE_NOT_FOUND
+					}Else{
+						Split work(1),"‡®",work2
+						If stat>1{
+							Split work2(1),"âó",work2
+							Switch work2(0)
+								Case "ì¸"
+									work_mode=FILE_INPUT
+									SwBreak
+								Case "èo"
+									work_mode=FILE_OUTPUT
+									SwBreak
+								Case "ïç"
+								Case "ït"
+								Case "â¡"
+								Case "ïçâ¡"
+								Case "ïtâ¡"
+									work_mode=FILE_APPEND
+									SwBreak
+								Case "ët"
+									#ifndef __BUILD_64BIT_MODE__
+										work_mode=FILE_PLAY
+									#else
+										work_mode=FILE_RANDOM
+									#endif
+									SwBreak
+								Default
+									work_mode=FILE_RANDOM
+									SwBreak
+							SwEnd
+						}Else{
+							work_mode=FILE_RANDOM
+						}
+						Split work(1),"âóëÊ",work2
+						If stat>1{
+							Split work2(1),"‡®",work2(1)
+							If Kan2Arabia(work2(1))-1>=0{
+								Repeat 65536/4
+									lPoke data_file@,65536*(Int(Kan2Arabia(work2(1)))-1)+cnt*4,0
+								Loop
+								bLoad work(0),data_file@(Int(Kan2Arabia(work2(1)))-1)
+								file_mode@(Int(Kan2Arabia(work2(1)))-1)=work_mode
+								#ifndef __COMPILE_ON_HSP3DISH__
+									If work_mode==FILE_PLAY{
+										mmlSet Int(Kan2Arabia(work2(1)))-1,data_file@(Int(Kan2Arabia(work2(1)))-1)
+									}
+									error=0
+								#endif
+							}Else{
+								error=ERROR_OUT_OF_RANGE
+							}
+						}
+					}
+				}
+				SwBreak
+			Case "ï¬ëÊ"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				data_file@(Kan2Arabia(work))=""
+				SwBreak
+			Case "ùF"
+			Case "åÇ"
+			Case "ùõ"
+			Case "ìÀ"
+			Case "í@"
+			Case "ù»"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				Split work,"à»",work
+				If stat>1{
+					DupPtr work_x,Int(Kan2Arabia(work(0))),1,VarType("str")
+					Poke work_x,0,Int(Kan2Arabia(work(1)))
+					Dim work_x
+					error=0
+				}
+				SwBreak
+			Case "êq"
+			Case "êu"
+			Case "Êm"
+			Case "ñ‚"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				input_variable@=work
+				inputting@=1
+				st_program@=program@(run_line@)
+				OnDisplay "? "
+				cursor_x@+2
+				CheckSentence "ëN
+				error=0
+				SwBreak
+			Case "ë“"
+			Case "ìô"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				GoSub *Refresh@
+				waiting=Int(Kan2Arabia(work)/10)
+				error=0
+				SwBreak
+			Case "â¸"
+			Case "ùÃ"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				Split work,"Åu",work
+				If stat>1{
+					Split work(1),"Åv",work
+					DirList work2,work(0),5
+					If stat{
+						ChDir work(0)
+						error=0
+					}Else{
+						error=ERROR_FILE_NOT_FOUND
+					}
+				}
+				SwBreak
+			Case "ën"
+			Case "åö"
+			Case "çÏ"
+			Case "ê¨"
+			Case "ë¢"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				If StrMid(work,0,2)=="‚x"{
+					window_id@(window_num@)=WINDOW_FREE+free_window_num@
+					Screen window_id@(window_num@)
+					If mode_full@{
+						gSel WINDOW_FULL
+					}Else{
+						gSel WINDOW_MAIN
+					}
+					window_num@+
+					free_window_num@+
+					error=0
+				}Else{
+					Split work,"Åu",work
+					If stat>1{
+						Split work(1),"Åv",work
+						DirList work2,work(0),5
+						If stat{
+							MkDir work(0)
+							error=0
+						}Else{
+							error=ERROR_FILE_ALREADY_EXISTED
+						}
+					}
+				}
+				SwBreak
+			Case "éÃ"
+				work=StrMid(string,i+1,StrLen(string)-(i+1))
+				Split work,"Åu",work
+				If stat>1{
+					Split work(1),"Åv",work
+					Exist work(0)
+					If strsize==-1{
+						error=ERROR_FILE_NOT_FOUND
+					}Else{
+						Delete work(0)
+						error=0
+					}
+				}
+				SwBreak
+		SwEnd
+	Next
+	If error==ERROR_SYNTAX{
+		Split string,"ê•",work_pi,work_wei
+		If stat>1{
+			flag=0
+			If StrMid(work_pi,StrLen(work_pi)-2,2)=="ï§"{
+				work_pi=StrMid(work_pi,0,StrLen(work_pi)-2)
+				Split work_wei,"Åu",work_wei
+				If stat>1{
+					Split work_wei(1),"Åv",work_wei
+					Repeat memory_num_s@
+						If memory_name_s@(cnt)==work_pi{
+							memory_data_s@(cnt)=work_wei
+							flag=1
+							Break
+						}
+					Loop
+					If flag==0{
+						memory_name_s@(memory_num_s@)=work_pi
+						memory_data_s@(memory_num_s@)=work_wei
+						memory_num_s@+
+					}
+					error=0
+				}Else{
+				}
+			}Else{
+				Repeat memory_num@
+					If memory_name@(cnt)==work_pi{
+						Complex memory_data@(cnt),Kan2Arabia(work_wei,0),Kan2Arabia(work_wei,1),1
+						work_let_num=cnt
+						flag=1
+						Break
+					}
+				Loop
+				If flag==0{
+					sDim memory_data_work,16,memory_num@
+					Repeat memory_num@
+						MemCpy memory_data_work(cnt),memory_data@(cnt),16
+					Loop
+					sDim memory_data@,16,memory_num@+1
+					Repeat memory_num@
+						MemCpy memory_data@(cnt),memory_data_work(cnt),16
+					Loop
+					memory_name@(memory_num@)=work_pi
+					Complex memory_data@(memory_num@),Kan2Arabia(work_wei,0),Kan2Arabia(work_wei,1),1
+					work_let_num=memory_num@
+					memory_num@+
+				}
+				error=0
+			}
+		}
+	}
+	Switch error
+		Case ERROR_NONE
+			SwBreak
+		Case ERROR_SYNTAX
+			Beep 880,500
+			If run_mode@{
+				OnDisplay "ëÊ"+work_line@+"óLï∂èäïsê≥ÅB
+			}Else{
+				OnDisplay "óLï∂èäïsê≥ÅB
+			}
+			cursor_y@+
+			cursor_x@=0
+			SwBreak
+		Case ERROR_FILE_NOT_FOUND
+			Beep 880,500
+			If run_mode{
+				OnDisplay "ëÊ"+work_line@+"óLèäïsímîVèëÅB
+			}Else{
+				OnDisplay "óLèäïsímîVèëÅB
+			}
+			cursor_y@+
+			cursor_x@=0
+			SwBreak
+		Case ERROR_OUT_OF_RANGE
+			Beep 880,500
+			OnDisplay "óLílèäïsìKÅB
+			cursor_y@+
+			cursor_x@=0
+			SwBreak
+		Case ERROR_ZERO_DIV
+			Beep 880,500
+			OnDisplay "îÌèúà»óÎÅB
+			cursor_y@+
+			cursor_x@=0
+			SwBreak
+		Case ERROR_RETURN_WITHOUT_GOSUB
+			Beep 880,500
+			OnDisplay "ñ≥ãééqóLâÒÅB
+			cursor_y@+
+			cursor_x@=0
+			SwBreak
+		Case ERROR_NEXT_WITHOUT_FOR
+			Beep 880,500
+			OnDisplay "ñ≥õîóLãééüÅB
+			cursor_y@+
+			cursor_x@=0
+			SwBreak
+		Default
+			Beep 880,500
+			If run_mode@{
+				OnDisplay "ê∂ñ¢ímåÎâó"+work_line@+"ÅB
+			}Else{
+				OnDisplay "ê∂ñ¢ímåÎÅB
+			}
+			cursor_y@+
+			cursor_x@=0
+			SwBreak
+	SwEnd
+	Return error
+
+#deffunc Command int p1
+	Switch p1
+		#ifndef __COMPILE_ON_HSP3DISH__
+			Case COMMAND_MENUBAR
+				menubar@=menubar@==0
+				If IsZoomed@(hwnd)==0&&ginfo_sel==WINDOW_MAIN{
+					work_winx=ginfo_winx/(SIZE_X*(1+trans_c2n@))*(SIZE_X*(1+trans_c2n@))
+					work_winy=(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))/SIZE_Y*SIZE_Y
+					GoSub *BuildMenu@
+					Width work_winx,work_winy
+					gosa_x@=work_winx-ginfo_winx
+					gosa_y@=work_winy-(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))
+					Width work_winx+gosa_x@,work_winy+gosa_y@
+				}
+				SwBreak
+			Case COMMAND_STATUSBAR
+				statusbar@=statusbar@==0
+				If statusbar@{
+					GoSub *BuildStatus@
+					If IsZoomed@(hwnd)==0&&ginfo_sel==WINDOW_MAIN{
+						work_winx=ginfo_winx
+						work_winy=ginfo_winy+stbar_sy@stbar(ginfo_sel)
+						Width work_winx,work_winy
+						gosa_x@=work_winx-ginfo_winx
+						gosa_y@=work_winy-ginfo_winy
+						Width work_winx+gosa_x@,work_winy+gosa_y@
+						Stbar_Resize
+					}
+				}Else{
+					ClrObj
+					If IsZoomed@(hwnd)==0&&ginfo_sel==WINDOW_MAIN{
+						work_winx=ginfo_winx
+						work_winy=ginfo_winy-stbar_sy@stbar(ginfo_sel)
+						Width work_winx,work_winy
+						gosa_x@=work_winx-ginfo_winx
+						gosa_y@=work_winy-ginfo_winy
+						Width work_winx+gosa_x@,work_winy+gosa_y@
+					}
+				}
+				GoSub *BuildMenu@
+				SwBreak
+		#endif
+		Case COMMAND_QUIT
+			Dialog "èIóπÇµÇ‹Ç∑Ç©ÅD",2,"ämîF
+			If stat==6{
+				ForEach hwnd_menu@
+					DestroyMenu hwnd_menu@(cnt)
+				Loop
+				If handle_map@{
+					CloseHandle@ handle_map@
+				}
+				If onexit_@==0{
+					End
+				}Else{
+					endf@=1
+				}
+			}
+			dialog_close_soon=1
+			SwBreak
+		Case COMMAND_NEW
+			Dialog "êVãKçÏê¨ÇµÇ‹Ç∑Ç©ÅD",2,"ämîF
+			If stat==6{
+				OnDisplay "ñ≈ï∂ÅB
+				cursor_y@+
+				cursor_x@=0
+				CheckSentence "ñ≈ï∂
+				OnDisplay "çDÅB
+				cursor_y@+
+			}
+			SwBreak
+		Case COMMAND_LOAD
+			OnDisplay "Ê§Åu
+			cursor_x@+4
+			SetDialog 320,120
+			Color 240,240,240
+			BoxF
+			read_file="
+			Input read_file,200,24
+			box_id=stat
+			ObjSize 64,24
+			Button GoSub "éQè∆...",*Refer
+			Button GoSub "OK",*Ok
+			gSel WINDOW_PARAMETER,1
+			If mode_full@{
+				gSel WINDOW_FULL
+			}Else{
+				gSel WINDOW_MAIN
+			}
+			EnableWindow hwnd,0
+			SwBreak
+		Case COMMAND_SAVE
+			SwBreak
+		Case COMMAND_RUN
+			OnDisplay "ëñÅB
+			cursor_y@+
+			cursor_x@=0
+			CheckSentence "ëñ
+			SwBreak
+		Case COMMAND_BREAK
+			CheckSentence "ö”
+			listing@=0
+			filesing@=0
+			GoSub *BuildMenu@
+			SwBreak
+		Case COMMAND_LIST
+			OnDisplay "ãLï∂ÅB
+			cursor_y@+
+			CheckSentence "ãLï∂
+			SwBreak
+		Case COMMAND_MARK
+			marker@=marker@==0
+			SwBreak
+		Case COMMAND_COPY
+			If cursor_x@{
+				work_end_x=cursor_x@-1
+				work_end_y=cursor_y@
+			}Else{
+				work_end_x=ginfo_winx/(SIZE_X*(1+trans_c2n@))-1
+				work_end_y=cursor_y@-1
+			}
+			work="
+			If work_end_y==choosing_start_y@{
+				Repeat work_end_x-choosing_start_x@+1
+					work+FromDisplay(choosing_start_x@+cnt,choosing_start_y@)
+				Loop
+			}Else{
+				Repeat ginfo_winx/(SIZE_X*(1+trans_c2n@))-choosing_start_x@
+					work+FromDisplay(choosing_start_x@+cnt,choosing_start_y@)
+					If cnt>=ginfo_winx/(SIZE_X*(1+trans_c2n@))-choosing_start_x@-1{
+						work+"\n
+					}
+				Loop
+				Repeat ginfo_winx/(SIZE_X*(1+trans_c2n@))*(work_end_y-choosing_start_y@-1)
+					work+FromDisplay(cnt\(ginfo_winx/(SIZE_X*(1+trans_c2n@))),choosing_start_y@+cnt/(ginfo_winx/(SIZE_X*(1+trans_c2n@)))+1)
+					If cnt\(ginfo_winx/(SIZE_X*(1+trans_c2n@)))>=ginfo_winx/(SIZE_X*(1+trans_c2n@))-1{
+						work+"\n
+					}
+				Loop
+				Repeat work_end_x+1
+					work+FromDisplay(cnt,work_end_y)
+				Loop
+			}
+			#ifndef __COMPILE_ON_HSP3DISH__
+				ClipSet@ work
+			#else
+				clip_board@=work
+			#endif
+			SwBreak
+		Case COMMAND_PASTE
+			#ifndef __COMPILE_ON_HSP3DISH__
+				sDim work,ginfo_winx/SIZE_X*(ginfo_winy/SIZE_Y)
+				ClipGet@ work,ginfo_winx/SIZE_X*(ginfo_winy/SIZE_Y)
+			#else
+				work=clip_board@
+			#endif
+			Split work,"\n",work
+			work2=stat
+			Repeat work2
+				OnDisplay work(cnt)
+				If cnt<work2-1{
+					GoSub *OnReturn@
+				}
+			Loop
+			cursor_x@+StrLen(work(work2-1))
+			SwBreak
+		Case COMMAND_DEL
+			If cursor_x@{
+				work_end_x=cursor_x@-1
+				work_end_y=cursor_y@
+			}Else{
+				work_end_x=ginfo_winx/(SIZE_X*(1+trans_c2n@))-1
+				work_end_y=cursor_y@-1
+			}
+/*			If work_end_y==choosing_start_y@{
+				Repeat work_end_x-choosing_start_x@+1
+					data@(choosing_start_x@+cnt,choosing_start_y@)=0
+				Loop
+			}Else{
+				Repeat ginfo_winx/(SIZE_X*(1+trans_c2n@))-choosing_start_x@
+					data@(choosing_start_x@+cnt,choosing_start_y@)=0
+				Loop
+				Repeat ginfo_winx/(SIZE_X*(1+trans_c2n@))*(work_end_y-choosing_start_y@-1)
+					data@(cnt\(ginfo_winx/(SIZE_X*(1+trans_c2n@))),choosing_start_y@+cnt/(ginfo_winx/(SIZE_X*(1+trans_c2n@)))+1)=0
+				Loop
+				Repeat work_end_x+1
+					data@(cnt,work_end_y)=0
+				Loop
+			}	*/
+			If 
+			SwBreak
+	SwEnd
+	Return
+
+#deffunc Invert int p1,int p2,int p3,int p4
+	If mode_vertical@{
+		Repeat p3-p1+ginfo_winy/(SIZE_X*(1+trans_c2n@))*(p4-p2)+1
+			cnt_=cnt
+			Repeat (SIZE_X*(1+trans_c2n@))*SIZE_Y
+				pGet ginfo_winx-((p1+cnt_)/(ginfo_winy/(SIZE_X*(1+trans_c2n@)))+p2)*SIZE_Y-cnt/(SIZE_X*(1+trans_c2n@))-1,(p1+cnt_)\(ginfo_winx/(SIZE_X*(1+trans_c2n@)))*(SIZE_X*(1+trans_c2n@))+cnt\(SIZE_X*(1+trans_c2n@))
+				Color 255-ginfo_r,255-ginfo_g,255-ginfo_b
+				pSet ginfo_winx-((p1+cnt_)/(ginfo_winy/(SIZE_X*(1+trans_c2n@)))+p2)*SIZE_Y-cnt/(SIZE_X*(1+trans_c2n@))-1,(p1+cnt_)\(ginfo_winx/(SIZE_X*(1+trans_c2n@)))*(SIZE_X*(1+trans_c2n@))+cnt\(SIZE_X*(1+trans_c2n@))
+			Loop
+		Loop
+	}Else{
+		gSel WINDOW_WORK
+		BoxF
+		gMode GMODE_GDI
+		Pos 0,p2*SIZE_Y
+		If mode_full@{
+			gCopy WINDOW_FULL,0,p2*SIZE_Y,SIZE_X*MAX_X,(p4+1)*SIZE_Y
+			gSel WINDOW_FULL
+		}Else{
+			gCopy WINDOW_MAIN,0,p2*SIZE_Y,SIZE_X*MAX_X,(p4+1)*SIZE_Y
+			gSel WINDOW_MAIN
+		}
+		If p4-p2==0{
+			Color 255,255,255
+			BoxF p1*SIZE_X,p2*SIZE_Y,(p3+1)*SIZE_X-1,(p4+1)*SIZE_Y-1
+			gMode GMODE_SUB,,,256
+			Pos p1*SIZE_X,p2*SIZE_Y
+			gCopy WINDOW_WORK,p1*SIZE_X,p2*SIZE_Y,SIZE_X*(p3-p1+1),SIZE_Y
+		}Else{
+			Color 255,255,255
+			BoxF p1*SIZE_X,p2*SIZE_Y,ginfo_winx-1,(p2+1)*SIZE_Y-1
+			BoxF 0,p4*SIZE_Y,(p3+1)*SIZE_X-1,(p4+1)*SIZE_Y-1
+			BoxF 0,(p2+1)*SIZE_Y,ginfo_winx-1,p4*SIZE_Y-1
+			gMode GMODE_SUB,,,256
+			Pos p1*SIZE_X,p2*SIZE_Y
+			gCopy WINDOW_WORK,p1*SIZE_X,p2*SIZE_Y,ginfo_winx-p1*SIZE_X,SIZE_Y
+			Pos 0,(p2+1)*SIZE_Y
+			gCopy WINDOW_WORK,0,(p2+1)*SIZE_Y,ginfo_winx,(p4-p2-1)*SIZE_Y
+			Pos 0,p4*SIZE_Y
+			gCopy WINDOW_WORK,0,p4*SIZE_Y,(p3+1)*SIZE_X,SIZE_Y
+		}
+/*		Repeat p3-p1+ginfo_winx/(SIZE_X*(1+trans_c2n@))*(p4-p2)+1
+			cnt_=cnt
+			Repeat (SIZE_X*(1+trans_c2n@))*SIZE_Y
+				pGet (p1+cnt_)\(ginfo_winx/(SIZE_X*(1+trans_c2n@)))*(SIZE_X*(1+trans_c2n@))+cnt\(SIZE_X*(1+trans_c2n@)),((p1+cnt_)/(ginfo_winx/(SIZE_X*(1+trans_c2n@)))+p2)*SIZE_Y+cnt/(SIZE_X*(1+trans_c2n@))
+				Color 255-ginfo_r,255-ginfo_g,255-ginfo_b
+				pSet (p1+cnt_)\(ginfo_winx/(SIZE_X*(1+trans_c2n@)))*(SIZE_X*(1+trans_c2n@))+cnt\(SIZE_X*(1+trans_c2n@)),((p1+cnt_)/(ginfo_winx/(SIZE_X*(1+trans_c2n@)))+p2)*SIZE_Y+cnt/(SIZE_X*(1+trans_c2n@))
+			Loop
+		Loop	*/
+	}
+	Return
+
+*Ok
+	gSel WINDOW_PARAMETER,-1
+	If mode_full@{
+		gSel WINDOW_FULL,1
+	}Else{
+		gSel WINDOW_MAIN,1
+	}
+	EnableWindow hwnd,1
+	OnDisplay read_file+"ÅvÅB
+	cursor_x@=0
+	cursor_y@+
+	CheckSentence "Ê§Åu"+read_file
+	OnDisplay "çDÅB
+	cursor_y@+
+	Return
+
+*Refer
+	gSel WINDOW_PARAMETER
+	Dialog,16
+	If stat{
+		read_file=refstr
+		ObjPrm box_id,read_file
+	}
+	If mode_full@{
+		gSel WINDOW_FULL
+	}Else{
+		gSel WINDOW_MAIN
+	}
+	Return
+
+#deffunc SetDialog int p1,int p2
+	Screen WINDOW_PARAMETER,p1,p2,SCREEN_HIDE or SCREEN_FIXEDSIZE
+	SetWindowLong hwnd,GWL_STYLE,GetWindowLong(hwnd,GWL_STYLE)-WS_MINIMIZEBOX
+	SetWindowLong hwnd,-8,hwnd_list@(mode_full@)
+;	SetWindowPos hwnd,0,0,0,0,0,39
+	DeleteMenu GetSystemMenu(hwnd),SC_MINIMIZE
+	DeleteMenu GetSystemMenu(hwnd),SC_MAXIMIZE
+	DeleteMenu GetSystemMenu(hwnd),SC_RESTORE
+	DeleteMenu GetSystemMenu(hwnd),SC_SIZE
+	Return
+
+#global
+
+#ifndef __COMPILE_ON_HSP3DISH__
+
+#module AboutMenu
+
+#deffunc NewAboutMenu int p1,int p2,int p3,str p4
+	If p2==$10{
+		AddMenu hwnd_real_menu@(p1),p4,hwnd_real_menu@(p3),p2
+		AppendMenu hwnd_menu@(p1),p2,hwnd_menu@(p3),p4
+	}Else{
+		AddMenu hwnd_real_menu@(p1),p4,p3,p2
+		AppendMenu hwnd_menu@(p1),p2,p3,p4
+	}
+	Return
+
+#global
+
+#endif
+
+#module Comp
+
+#deffunc Complex var p3,double p1,double p2,int p4
+	If p4==0{
+		sDim p3,16
+	}
+	p1w=p1
+	p2w=p2
+	Repeat 8
+		Poke p3,cnt,Peek(p1w,cnt)
+		Poke p3,8+cnt,Peek(p2w,cnt)
+	Loop
+	Return
+
+#defcfunc Cmp2Real var p1
+	dDim p1f,1
+	Repeat 8
+		Poke p1f,cnt,Peek(p1,cnt)
+	Loop
+	Return p1f
+
+#defcfunc Cmp2Img var p1
+	dDim p2f,1
+	Repeat 8
+		Poke p2f,cnt,Peek(p1,8+cnt)
+	Loop
+	Return p2f
+
+#defcfunc AbsC var p1
+	p1f8=Cmp2Real(p1)
+	p2f8=Cmp2Img(p1)
+	Return SqRt(p1f8*p1f8+p2f8*p2f8)
+
+#defcfunc Arg var p1
+	p1f9=Cmp2Real(p1)
+	p2f9=Cmp2Img(p1)
+	If p1f9==0{
+		If p2f9==0{
+			t=0.
+		}Else{
+			t=M_PI/2
+		}
+	}Else{
+		t=Atan(p2f9/p1f9)
+	}
+	If p2f9<0{
+		t-M_PI
+	}
+	If p2f9==0&&p1f9<0{
+		t=M_PI
+	}
+	Return t
+
+#deffunc AddC var p3,var p1,var p2
+	Complex p3,Cmp2Real(p1)+Cmp2Real(p2),Cmp2Img(p1)+Cmp2Img(p2)
+	Return
+
+#deffunc SubC var p3,var p1,var p2
+	Complex p3,Cmp2Real(p1)-Cmp2Real(p2),Cmp2Img(p1)-Cmp2Img(p2)
+	Return
+
+#deffunc MultiC var p3,var p1,var p2
+	dDim p1f5,1
+	dDim p2f5,1
+	dDim p1f6,1
+	dDim p2f6,1
+	Repeat 8
+		Poke p1f5,cnt,Peek(p1,cnt)
+		Poke p2f5,cnt,Peek(p1,8+cnt)
+		Poke p1f6,cnt,Peek(p2,cnt)
+		Poke p2f6,cnt,Peek(p2,8+cnt)
+	Loop
+	Complex p3,p1f5*p1f6-p2f5*p2f6,p1f5*p2f6+p2f5*p1f6
+	Return
+
+#deffunc DevisC var p3,var p1,var p2
+	p1f10=Cmp2Real(p2)
+	p2f10=Cmp2Img(p2)
+	Complex work20,p1f10,-p2f10
+	MultiC work20,p1,work20
+	If p1f10!=0||p2f10!=0{
+		Complex p3,Cmp2Real(work20)/(p1f10*p1f10+p2f10*p2f10),Cmp2Img(work20)/(p1f10*p1f10+p2f10*p2f10)
+		Return 0
+	}Else{
+		Return -1
+	}
+
+#deffunc local PowC2 var p3,var p1,double p2
+	dDim p1f2,1
+	dDim p2f2,1
+	Repeat 8
+		Poke p1f2,cnt,Peek(p1,cnt)
+		Poke p2f2,cnt,Peek(p1,8+cnt)
+	Loop
+	r=AbsC(p1)
+	t=Arg(p1)
+	Complex p3,PowF(r,p2)*Cos(p2*t),PowF(r,p2)*Sin(p2*t)
+	Return
+
+#deffunc PowC var p3,var p1,var p2
+	dDim p1f3,1
+	dDim p2f3,1
+	dDim p1f4,1
+	dDim p2f4,1
+	Repeat 8
+		Poke p1f3,cnt,Peek(p1,cnt)
+		Poke p2f3,cnt,Peek(p1,8+cnt)
+		Poke p1f4,cnt,Peek(p2,cnt)
+		Poke p2f4,cnt,Peek(p2,8+cnt)
+	Loop
+	PowC2 work,p1,p1f4
+	LogC work9,p1
+	CosC work10,work9
+	SinC work11,work9
+	Complex work12,0,1
+	MultiC work11,work12,work11
+	AddC work11,work10,work11
+	PowC2 work11,work11,p2f4
+	MultiC p3,work,work11
+	Return
+
+#deffunc local PowC3 var p3,double p1,var p2
+	p1f13=Cmp2Real(p2)
+	p2f13=Cmp2Img(p2)
+	Complex work12,Cos(LogF(p1)),Sin(LogF(p1))
+	PowC2 work12,work12,p2f13
+	Complex work13,PowF(p1,p1f13),0
+	MultiC p3,work13,work12
+	Return
+
+#deffunc LogC var p3,var p1
+	Complex p3,LogF(AbsC(p1)),Arg(p1)
+	Return
+
+#deffunc SinC var p3,var p1
+	If Cmp2Img(p1)!=0{
+		p1f11=Cmp2Real(p1)
+		p2f11=Cmp2Img(p1)
+		Complex work3,-p2f11,p1f11
+		Complex work4,p2f11,-p1f11
+		PowC3 work5,EULER,work3
+		PowC3 work6,EULER,work4
+		SubC work7,work5,work6
+		Complex work8,0,2
+		DevisC p3,work7,work8
+	}Else{
+		Complex p3,Sin(Cmp2Real(p1)),0
+	}
+	Return
+
+#deffunc CosC var p3,var p1
+	If Cmp2Img(p1)!=0{
+		p1f12=Cmp2Real(p1)
+		p2f12=Cmp2Img(p1)
+		Complex work3,-p2f12,p1f12
+		Complex work4,p2f12,-p1f12
+		PowC3 work5,EULER,work3
+		PowC3 work6,EULER,work4
+		AddC work7,work5,work6
+		Complex work8,2,0
+		DevisC p3,work7,work8
+	}Else{
+		Complex p3,Cos(Cmp2Real(p1)),0
+	}
+	Return
+
+#deffunc TanC var p3,var p1
+	If Cmp2Img(p1)!=0{
+		SinC work14,p1
+		CosC work15,p1
+		DevisC p3,work14,work15
+	}Else{
+		Complex p3,Tan(Cmp2Real(p1)),0
+	}
+	Return
+
+#deffunc CmpCpy var p1,var p2
+	MemCpy p1,p2,16
+	Return
+
+#global
+
+#module DialogBox
+
+#uselib "user32
+#func SetWindowLong "SetWindowLongA" int,int,int
+#func SetParent "SetParent" int,int
+#func GetClientRect "GetClientRect" int,var
+
+#deffunc TabInit
+	tab_num=0
+	OnCmd GoSub *ChangeTab,WM_NOTIFY
+	Return
+
+*ChangeTab
+	work_sel=ginfo_sel
+	DupPtr nmhdr,lparam,12
+	If nmhdr(0)==hwnd_tab@&&nmhdr(2)==-551{
+		gSel tab_list(id),-1
+		SendMsg hwnd_tab@,$130B
+		id=stat
+		gSel tab_list(id),1
+	}
+	gSel work_sel
+	Return
+
+#deffunc NewTab int p3,int p2,str p1
+	string=p1
+	item=1,0,0,VarPtr(string)
+	SendMsg p3,$1307,tab_num,VarPtr(item)
+	Dim rect,4
+	GetClientRect p3,rect
+	SendMsg p3,$1328,,VarPtr(rect)
+	bgScr p2,rect(2)-rect(0),rect(3)-rect(1),SCREEN_HIDE,rect(0),rect(1)
+	SetWindowLong hwnd,-16,$40000000
+	SetParent hwnd,p3
+	tab_list(tab_num)=p2
+	tab_num+
+	Return
+
+#deffunc GroupBox str p1
+	x=ginfo_cx:y=ginfo_cy
+	WinObj "static","",,$50000000
+	Pos x,y
+	Button GoSub p1,*Dummy
+	id=stat
+	SendMsg objinfo_hwnd(id),$F4,7
+	ObjSkip id,3
+	Return
+
+*Dummy
+	Return
+
+#deffunc Radio str p1,var p2,int p3,int p4
+	p2=p3
+	ChkBox p1,p2
+	id=stat
+	If p4{
+		SetWindowLong ObjInfo_hWnd(id),-16,$50020009
+	}Else{
+		SendMsg ObjInfo_hWnd(id),$F4,9
+	}
+	Return id
+
+#global
+
+	#ifndef __COMPILE_ON_HSP3DISH__
+		#ifndef __BUILD_64BIT_MODE__
+			mmlInit
+		#endif
+	#endif
+	#ifndef __COMPILE_ON_HSP3DISH__
+;		mode_graphical_font=1
+	#else
+		mode_graphical_font=0
+	#endif
+	mode_colourful=1
+	If mode_graphical_font{
+		Exist dir_exe+"\\char.bmp
+		If strsize==-1{
+			bgScr WINDOW_MAIN,1,1,,0,0
+			Title "âÊëú Font ÉfÉBÉ^ÇÃê∂ê¨
+			Dialog "âÊëú Font ÉfÉBÉ^Ç™ë∂ç›ÇµÇ‹ÇπÇÒÅD\nÇ±ÇÍÇê∂ê¨Ç∑ÇÈÇ∆ÅCî¸ÇµÇ¢èëëÃÇ…ÇÊÇÈï`âÊÇ™â¬î\Ç…Ç»ÇËÇ‹Ç∑ÅD\nê∂ê¨ÇµÇ‹Ç∑Ç©ÅD",2,"âÊëú Font ÉfÉBÉ^ÇÃê∂ê¨
+			If stat==6{
+				CreateFileMapping -1,0,PAGE_READWRITE,0,76,"kanzi_basic_memory
+				handle_map=stat
+				If handle_map==0{
+					Title "ÉGÉâÉ@
+					Dialog "ñ‚ëËÇ™î≠ê∂ÇµÇ‹ÇµÇΩÅD\nâÊëú Font ÉfÉBÉ^Çê∂ê¨Ç≈Ç´Ç‹ÇπÇÒÅD",1,"ÉGÉâÉ@
+					mode_graphical_font=0
+				}Else{
+					If GetLastError()==ERROR_ALREADY_EXISTS{
+						Title "èÓïÒ
+						Dialog "âÊëú Font ÉfÉBÉ^ÇÕê∂ê¨íÜÇ≈Ç∑ÅD\nÇµÇŒÇÁÇ≠Ç®ë“ÇøÇ≠ÇæÇ≥Ç¢ÅD",0,"èÓïÒ
+						mode_graphical_font=0
+					}Else{
+						MapViewOfFile handle_map,FILE_MAP_WRITE,0,0,0
+						pointer_first=stat
+						DupPtr font_name2,pointer_first,64,VarType("str")
+						font_name2=FONT_NAME
+						DupPtr font_size,pointer_first+64,4,VarType("int")
+						font_size=SIZE_Y
+						DupPtr font_magnification,pointer_first+68,4,VarType("int")
+						font_magnification=MAGNIFICATION
+						UnmapViewOfFile pointer_first
+						Dim font_name2
+						Dim font_size
+						DIm font_magnification
+						Screen WINDOW_MAIN,312,92,,(ginfo_dispx-312)/2,(ginfo_dispy-92)/2
+						Title "ê∂ê¨íÜ...
+						Font MSGOTHIC,16
+						Color 204,204,204
+						BoxF
+						Color 0,0,0
+						Pos 16,16
+						Print "âÊëú Font ÉfÉBÉ^Çê∂ê¨ÇµÇƒãèÇ‹Ç∑...
+						Pos 32,48
+						WinObj "msctls_progress32","",,$50000000,320-128,20
+						handle_prog=objinfo_hwnd(stat)
+						SendMsg handle_prog,$402,0
+						Pos 32+(320-128)+8,48
+						Print StrF("%5.1f%%",0F)
+						Wait 0
+						Exec dir_exe+"\\char.exe
+						MapViewOfFile handle_map,FILE_MAP_READ,0,0,0
+						pointer=stat+72
+						DupPtr progress,pointer,4,VarType("int")
+						Wait 0
+						Repeat
+							If progress>=257{
+								Break
+							}
+							SendMsg handle_prog,$402,progress*100/256
+							Color 204,204,204
+							BoxF 32+(320-128)+8,48
+							Color 0,0,0
+							Pos 32+(320-128)+8,48
+							Print StrF("%5.1f%%",Double(progress)*100/256)
+							Wait 100
+						Loop
+						UnmapViewOfFile pointer-72
+						SendMsg handle_prog,$402,100
+						Color 204,204,204
+						BoxF 32+(320-128)+8,48
+						Color 0,0,0
+						Pos 32+(320-128)+8,48
+						Print "100.0%
+						Dim progress
+						Dialog "âÊëú Font ÉfÉBÉ^ÇÃê∂ê¨Ç™äÆóπÇµÇ‹ÇµÇΩÅD",0,"äÆóπ
+						Wait 0
+						mode_graphical_font=1
+					}
+				}
+			}Else{
+				mode_graphical_font=0
+			}
+		}Else{
+			bgScr WINDOW_MAIN,480,360,SCREEN_HIDE,(ginfo_dispx-480)/2,(ginfo_dispy-360)/2
+			#ifndef __BUILD_64BIT_MODE__
+				Title "äøéö BASIC Å|î|äÓåNÅ|
+			#else
+				Title "äøéö BASIC Å|î|äÓåNÅ| (64 à å≥)
+			#endif
+			ClS 4
+			Color 255,255,255
+			Line 479,0,0,0
+			Line 479,359
+			Line 0,359
+			Line 0,0
+			Font "Batang",128,FONT_BOLD
+			Pos 32,48
+			Color 255,0,0
+			Print "î|
+			Pos ginfo_cx+ginfo_mesx,48
+			Color 0,255,0
+			Print "äÓ
+			Pos ginfo_cx+ginfo_mesx,48
+			Color 255,255,0
+			Print "åN
+			Font "Ink Free",32
+			Pos 64,224
+			Color 255,255,255
+			Print "The BASIC interpreter
+			Pos ginfo_cx+128,ginfo_cy+8
+			Print "with 
+			Pos ginfo_cx+ginfo_mesx,ginfo_cy-ginfo_mesy
+			Font "Ink Free",32,FONT_ITALIC
+			Print "kanzi
+			gSel WINDOW_MAIN,2
+			Wait 0
+		}
+	}
+
+	Screen WINDOW_MAIN,Limit(ginfo_dispx,SIZE_X,MAX_X*SIZE_X),Limit(ginfo_dispy,SIZE_Y,MAX_Y*SIZE_Y),SCREEN_HIDE
+	SetWindowLong hwnd,-16,GetWindowLong(hwnd,-16)or$50000
+	Title "äøéö BASIC Å|î|äÓåNÅ|
+	Width 640,400
+	gosa_x=640-ginfo_winx
+	gosa_y=400-ginfo_winy
+	Width 640+gosa_x,400+gosa_y,(ginfo_dispx-(640+gosa_x))/2,(ginfo_dispy-(400+gosa_y))/2
+	hwnd_ime(0)=ImmGetContext(hwnd)
+	hwnd_list(0)=hwnd
+	Dim key,256
+	Dim data,MAX_X,MAX_Y
+	Dim data_work,MAX_X,MAX_Y
+	sDim program,256,65529
+	sDim data_file,65536,16
+	Dim file_mode,16
+	that_stat_s="
+	that_stat=0
+	number="àÍ","ìÒ","éO","él","å‹","òZ","éµ","î™","ã„","è\","ì˘","ôø","ïS","êÁ","‰›","â≠","íõ","ãû","ö¥","û`","èı","ça","ä¿","ê≥","ç⁄","ã…
+	color_list="¸K","˚Ú","ê‘","ìç","˚ç","êÖ","â©","îí
+	function=1
+	function_str="Ê§Åu","àœÂj","ãé","ãLï∂","ëñ\r","èëÅu","åÆï§ê•","ãL","ï“èS\r","çƒëñ\r
+	through="Å@"," "
+	replace_from="ï“èW","ó^","ì«","âÊ","ì_","åo","è]","ún","ë±","èÊ","ñú","ó]","óê","â~","çÜ","î]","çï","ê¬","óŒ","ëŒ","âÛ","ãA","ä÷","é˚","î≤","ñ‘
+	replace_to  ="ï“èS","‰o","Ê§","·`","Íy","„S","ún","ò∏","„î","ò©","‰›","ÈP","ò™","ö¢","Âj","‰I","¸K","˚Ú","˚ç","õî","ö”","üd","Ëê","ùæ","ùU","„§
+	replace_from(Length(replace_from))="âû","íf","àÎ","ëo","óà","î≠","ïœ","êî","ëã"
+	replace_to  (Length(replace_to  ))="ú‰","ù–","ö„","ô‘","ò“","·¢","ùÃ","ù…","‚x
+	tab_space=8
+	statusbar=1
+	If statusbar{
+		Repeat 2
+			Command COMMAND_STATUSBAR
+		Loop
+	}
+	statement_type_pattern=""
+	NoteSel work
+		NoteLoad "statement.dat
+		Repeat notemax
+			NoteGet work2,cnt
+			Split work2,",",work2
+			statement_str(cnt)=work2(0)
+			statement_type(cnt)=work2(1)
+			flag=1
+			ForEach statement_type_pattern
+				If statement_type(Length(statement_type)-1)==statement_type_pattern(cnt){
+					flag=0
+					Break
+				}
+			Loop
+			If flag{
+				statement_type_pattern(Length(statement_type_pattern))=statement_type(Length(statement_type)-1)
+			}
+		Loop
+		NoteLoad "system.dat
+		Repeat notemax
+			NoteGet work2,cnt
+			Split work2,",",work2
+			statement_str(Length(statement_str))=work2(0)
+			statement_type(Length(statement_type))="system
+		Loop
+	NoteUnsel
+	OnExit GoSub *Vofari
+	#ifndef __COMPILE_ON_HSP3DISH__
+		OnCmd GoSub *SysKeyDown,WM_SYSKEYDOWN
+		OnCmd GoSub *OnMenu,WM_COMMAND
+		OnCmd GoSub *Resized,WM_SIZE
+	#endif
+	ClS 4
+	#ifndef __COMPILE_ON_HSP3DISH__
+		Stbar_Ini
+		ClrObj
+	#endif
+
+	Buffer WINDOW_GRAPHIC,Limit(ginfo_dispx,(SIZE_X*(1+trans_c2n@)),MAX_X*(SIZE_X*(1+trans_c2n@))),Limit(ginfo_dispy,SIZE_Y,MAX_Y*SIZE_Y)
+	ClS 4
+
+	Buffer WINDOW_BACKGROUND,Limit(ginfo_dispx,(SIZE_X*(1+trans_c2n@)),MAX_X*(SIZE_X*(1+trans_c2n@))),Limit(ginfo_dispy,SIZE_Y,MAX_Y*SIZE_Y)
+	ClS 4
+
+	Buffer WINDOW_CONSOLE,Limit(ginfo_dispx,(SIZE_X*(1+trans_c2n@)),MAX_X*(SIZE_X*(1+trans_c2n@))),Limit(ginfo_dispy,SIZE_Y,MAX_Y*SIZE_Y)
+	ClS 4
+	Font FONT_NAME,SIZE_Y
+
+;	Buffer WINDOW_LABOR,Limit(ginfo_dispx*MAGNIFICATION,SIZE_X*MAGNIFICATION,MAX_X*SIZE_X*MAGNIFICATION),Limit(ginfo_dispy*MAGNIFICATION,SIZE_Y*MAGNIFICATION,MAX_Y*SIZE_Y*MAGNIFICATION)
+;	ClS 4
+;	Font FONT_NAME,SIZE_Y*MAGNIFICATION
+
+	Buffer WINDOW_WORK,SIZE_X*MAX_X,SIZE_Y*MAX_Y
+
+	If mode_graphical_font{
+		Buffer WINDOW_LABOR,256*SIZE_Y,256*SIZE_Y
+		PicLoad dir_exe+"\\char.bmp
+		If mode_vertical{
+			gMode GMODE_GDI,SIZE_Y,SIZE_Y
+			Repeat 256
+				rotate_char(cnt)=cnt
+			Loop
+			rotate_char(Length(rotate_char))=$7C81,$7581,$7681,$6081,$6F81,$7081,$5B81,$6D81,$6E81
+			ForEach rotate_char
+				gSel WINDOW_WORK
+				Color 0,0,0
+				BoxF 0,0,15,15
+				Pos 0,0
+				gCopy WINDOW_LABOR,SIZE_Y*(rotate_char(cnt)\256),SIZE_Y*(rotate_char(cnt)/256),SIZE_Y,SIZE_Y
+				gSel WINDOW_LABOR
+				Color 0,0,0
+				BoxF SIZE_Y*(rotate_char(cnt)\256),SIZE_Y*(rotate_char(cnt)/256),SIZE_Y*(rotate_char(cnt)\256+1)-1,SIZE_Y*(rotate_char(cnt)/256+1)-1
+				Pos SIZE_Y*(rotate_char(cnt)\256)+SIZE_Y/2,SIZE_Y*(rotate_char(cnt)/256)+SIZE_Y/2
+				gRotate WINDOW_WORK,0,0,M_PI/2,SIZE_Y,SIZE_Y
+			Loop
+		}
+	}
+
+	#ifndef __COMPILE_ON_HSP3DISH__
+		GoSub *BuildEditor
+	#endif
+
+#ifndef __COMPILE_ON_HSP3DISH__
+
+	bgScr WINDOW_FULL,Limit(ginfo_dispx,SIZE_X,MAX_X*SIZE_X),Limit(ginfo_dispy,SIZE_Y,MAX_Y*SIZE_Y),SCREEN_HIDE,0,0,ginfo_dispx,ginfo_dispy
+	Title "äøéö BASIC Å|î|äÓåNÅ|
+	ClS 4
+	Stbar_Ini
+	ClrObj
+	Font FONT_NAME,SIZE_Y
+	hwnd_ime(1)=ImmGetContext(hwnd)
+	hwnd_list(1)=hwnd
+
+	bgScr WINDOW_EXTEND,(SIZE_X*(1+trans_c2n@))*(5*6+4),SIZE_Y,SCREEN_HIDE
+	ClS 4
+	Font FONT_NAME,SIZE_Y
+
+	Screen WINDOW_MARK,520,320,SCREEN_HIDE or SCREEN_TOOL
+	qwerty='Q','W','E','R','T','Y','U','I','O','P'
+	asdfg='A','S','D','F','G','H','J','K','L'
+	zxcvb='Z','X','C','V','B','N','M'
+	Dim keyboard_layout,4,256
+	keyboard_layout(0,KEY_BREAK)=8,0,32,32
+	Repeat 5
+		keyboard_layout(0,KEY_F1+cnt)=56+32*cnt,0,32,32
+	Loop
+	Repeat 5
+		keyboard_layout(0,KEY_F6+cnt)=232+32*cnt,0,32,32
+	Loop
+	keyboard_layout(0,KEY_F11)=408,0,32,32
+	keyboard_layout(0,KEY_F12)=440,0,32,32
+	keyboard_layout(0,KEY_ESC)=0,48,32,32
+	Repeat 9
+		keyboard_layout(0,'1'+cnt)=32*(1+cnt),48,32,32
+	Loop
+	keyboard_layout(0,'0')=320,48,32,32
+	keyboard_layout(0,'-')=352,48,32,32
+	keyboard_layout(0,'^')=384,48,32,32
+	keyboard_layout(0,'\\')=416,48,32,32
+	keyboard_layout(0,KEY_BS)=448,48,32,32
+	keyboard_layout(0,KEY_TAB)=0,80,40,32
+	ForEach qwerty
+		keyboard_layout(0,qwerty(cnt))=40+32*cnt,80,32,32
+	Loop
+	keyboard_layout(0,'@')=360,80,32,32
+	keyboard_layout(0,'[')=392,80,32,32
+	keyboard_layout(0,KEY_RETURN)=424,80,56,64
+	keyboard_layout(0,KEY_CTRL)=0,112,48,32
+	ForEach asdfg
+		keyboard_layout(0,asdfg(cnt))=48+32*cnt,112,32,32
+	Loop
+	keyboard_layout(0,';')=336,112,32,32
+	keyboard_layout(0,'*')=368,112,32,32
+	keyboard_layout(0,']')=400,112,32,32
+	keyboard_layout(0,KEY_SHIFT)=0,144,480,32
+	ForEach zxcvb
+		keyboard_layout(0,zxcvb(cnt))=64+32*cnt,144,32,32
+	Loop
+	keyboard_layout(0,',')=288,144,32,32
+	keyboard_layout(0,'.')=320,144,32,32
+	keyboard_layout(0,'/')=352,144,32,32
+	keyboard_layout(0,240)=384,144,32,32
+	Repeat Length2(keyboard_layout)
+		If keyboard_layout(KEYBOARD_SIZE_X,cnt)!=0&&keyboard_layout(KEYBOARD_SIZE_Y,cnt)!=0{
+			Pos keyboard_layout(KEYBOARD_POS_X,cnt),keyboard_layout(KEYBOARD_POS_Y,cnt)
+			Color 0,0,0
+			Line keyboard_layout(KEYBOARD_POS_X,cnt)+keyboard_layout(KEYBOARD_SIZE_X,cnt),keyboard_layout(KEYBOARD_POS_Y,cnt),keyboard_layout(KEYBOARD_POS_X,cnt),keyboard_layout(KEYBOARD_POS_Y,cnt)
+			Line keyboard_layout(KEYBOARD_POS_X,cnt)+keyboard_layout(KEYBOARD_SIZE_X,cnt),keyboard_layout(KEYBOARD_POS_Y,cnt)+keyboard_layout(KEYBOARD_SIZE_Y,cnt)
+			Line keyboard_layout(KEYBOARD_POS_X,cnt),keyboard_layout(KEYBOARD_POS_Y,cnt)+keyboard_layout(KEYBOARD_SIZE_Y,cnt)
+			Line keyboard_layout(KEYBOARD_POS_X,cnt),keyboard_layout(KEYBOARD_POS_Y,cnt)
+			Color 192,192,192
+			BoxF keyboard_layout(KEYBOARD_POS_X,cnt)+1,keyboard_layout(KEYBOARD_POS_Y,cnt)+1,keyboard_layout(KEYBOARD_POS_X,cnt)+keyboard_layout(KEYBOARD_SIZE_X,cnt)-1,keyboard_layout(KEYBOARD_POS_Y,cnt)+keyboard_layout(KEYBOARD_SIZE_Y,cnt)-1
+		}
+	Loop
+
+	Screen WINDOW_VIEW,640,480,SCREEN_HIDE
+
+	Screen WINDOW_CONFIG,320,240,SCREEN_FIXEDSIZE; or SCREEN_HIDE
+	DeleteMenu GetSystemMenu(hWnd),SC_MINIMIZE
+	DeleteMenu GetSystemMenu(hWnd),SC_MAXIMIZE
+	DeleteMenu GetSystemMenu(hWnd),SC_RESTORE
+	DeleteMenu GetSystemMenu(hWnd),SC_SIZE
+	SetWindowLong hwnd,GWL_EXSTYLE,GetWindowLong(hwnd,GWL_EXSTYLE)or WS_EX_DLGMODALFRAME
+	SetWindowLong hwnd,GWL_STYLE,GetWindowLong(hwnd,GWL_STYLE)-WS_MINIMIZEBOX
+	SetWindowLong hwnd,-8,hwnd_list(mode_full)
+	SetClassLong hWnd,GCL_HICON,0
+	SetClassLong hWnd,GCL_HICONSM,0
+	SysColor 4
+	BoxF
+	Pos 4,4
+	WinObj "systabcontrol32","",,WS_CHILD or WS_VISIBLE or WS_CLIPCHILDREN,ginfo_winx-8,ginfo_winy-(24+12)
+	hwnd_tab=ObjInfo_hWnd(stat)
+	SendMsg hwnd_tab,$30,GetStockObject(DEFAULT_GUI_FONT)
+	TabInit
+	NewTab hwnd_tab,WINDOW_TAB_COLOUR,"êF
+	SysColor 4
+	BoxF
+	SysColor 7
+	Font MSGOTHIC,12
+	Pos 12,8
+	ObjSize 128,12
+	ChkBox "î‘ëgï\ÇêFï™ÇØÇ∑ÇÈ",mode_colourful
+	Pos ginfo_cx+4
+	Repeat Length(statement_type_pattern)-1,1
+		Pos,ginfo_cy+4
+		Switch statement_type_pattern(cnt)
+			Case "operator"
+				Print "ââéZéq (\"operator\")
+				SwBreak
+			Case "statement"
+				Print "ñΩóﬂ (\"statement\")
+				SwBreak
+			Case "system"
+				Print "ÉVÉXÉeÉÄïœêî (\"system\")
+				SwBreak
+			Default
+				Print "\""+statement_type_pattern(cnt)+"\""
+				SwBreak
+		SwEnd
+	Loop
+	NewTab hwnd_tab,WINDOW_TAB_VIEW,"ï\é¶
+	SysColor 4
+	BoxF
+	SysColor 7
+	Font MSGOTHIC,12
+	NewTab hwnd_tab,WINDOW_TAB_CONTROL,"ëÄçÏ
+	SysColor 4
+	BoxF
+	SysColor 7
+	NewTab hwnd_tab,WINDOW_TAB_DATE,"ì˙ïtÇ∆éûçè
+	SysColor 4
+	BoxF
+	SysColor 7
+	NewTab hwnd_tab,WINDOW_TAB_OTHERS,"ÇªÇÃëº
+	SysColor 4
+	BoxF
+	SysColor 7
+	gSel WINDOW_TAB_COLOUR,1
+
+#endif
+
+	If mode_full{
+		gSel WINDOW_FULL,1
+	}Else{
+		gSel WINDOW_MAIN,1
+	}
+	GoSub *BuildMenu
+	Dim logfont,20
+	logfont(0)=SIZE_Y
+	Poke logfont,23,1
+	font_name_=FONT_NAME
+	MemCpy logfont,font_name_,strlen(font_name_),28,0
+	Font FONT_NAME,SIZE_Y
+	color_r=0:color_g=255:color_b=255
+	#ifndef __BUILD_64BIT_MODE__
+		OnDisplay "äøéö BASIC Å|î|äÓåNÅ| ("+VERSION_NUMBER+" Âj)
+	#else
+		OnDisplay "äøéö BASIC Å|î|äÓåNÅ| (64 à å≥ "+VERSION_NUMBER+" Âj)
+	#endif
+	cursor_y+
+	OnDisplay "(C)èºìcóLíòçÏû‹âóïΩê¨éOè\îN
+	cursor_y+
+	OnDisplay "î\óp "+VarSize(program)*Length(program)+" éöêﬂ
+	cursor_y+
+	color_r=255:color_g=255:color_b=255
+	OnDisplay "îıçDÅB
+	cursor_x=0:cursor_y+2
+	colour_r=0:colour_g=0:colour_b=0
+	gcolor_r=255:gcolor_g=255:gcolor_b=255
+
+*Main
+	ime_text_="
+	Repeat
+		If ginfo_act==WINDOW_MAIN||ginfo_act==WINDOW_FULL{
+			ImmSetCompositionFont hwnd_ime(mode_full),logfont
+		}
+		If IsIconic(hwnd)==0{
+			If (ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))<SIZE_Y*(1+function){
+				If mode_vertical{
+					Width ginfo_winx+gosa_x,SIZE_X*(1+function)+statusbar*stbar_sy@stbar(ginfo_sel)+gosa_y
+				}Else{
+					Width ginfo_winx+gosa_x,SIZE_Y*(1+function)+statusbar*stbar_sy@stbar(ginfo_sel)+gosa_y
+				}
+			}
+			If IsZoomed(hwnd)==0||mode_full==0{
+				work_x=ginfo_winx:work_y=ginfo_winy
+				If work_x\(SIZE_X*(1+trans_c2n@)){
+					work_x=(work_x+(SIZE_X*(1+trans_c2n@))/2)/(SIZE_X*(1+trans_c2n@))*(SIZE_X*(1+trans_c2n@))
+				}
+				If (work_y-statusbar@*stbar_sy@stbar(ginfo_sel))\SIZE_Y{
+					work_y=((work_y-statusbar@*stbar_sy@stbar(ginfo_sel))+SIZE_Y/2)/SIZE_Y*SIZE_Y+statusbar@*stbar_sy@stbar(ginfo_sel)
+				}
+				If ginfo_winx!=work_x||ginfo_winy!=work_y{
+					Width work_x+gosa_x,work_y+gosa_y
+				}
+			}
+			If ginfo_winx<(SIZE_X*(1+trans_c2n@))*(5*6+4)&&function&&extension==0&&(ginfo_act==WINDOW_MAIN||ginfo_act==WINDOW_EXTEND){
+				gSel WINDOW_EXTEND,2
+				If mode_full{
+					gSel WINDOW_FULL,1
+				}Else{
+					gSel WINDOW_MAIN,1
+				}
+				extension=1
+			}Else: If extension{
+				If ginfo_winx>=(SIZE_X*(1+trans_c2n@))*(5*6+4)||(ginfo_act!=WINDOW_MAIN&&ginfo_act!=WINDOW_EXTEND){
+					gSel WINDOW_EXTEND,-1
+					extension=0
+				}
+				If ginfo_sel==WINDOW_MAIN||ginfo_sel==WINDOW_FULL{
+					work_x=ginfo_wx1+gosa_x*3/4+1
+					work_y=ginfo_wy2-statusbar*stbar_sy@stbar(ginfo_sel)-SIZE_Y-(gosa_y*3/4+1)
+					gSel WINDOW_EXTEND
+					Width,,work_x,work_y
+				}
+				If mode_full{
+					gSel WINDOW_FULL,ginfo_act==WINDOW_EXTEND
+				}Else{
+					gSel WINDOW_MAIN,ginfo_act==WINDOW_EXTEND
+				}
+			}
+/*			gSel WINDOW_MAIN
+			work_winx=ginfo_winx
+			work_winy=ginfo_winy
+			gSel WINDOW_VIEW
+			ReDraw 0
+			Color 0,0,0
+			BoxF
+			gMode GMODE_ADD,0,0,192
+			d3SetCam -500+320,-500+240,-500,320,240,0,0.8
+			x=0,work_winx,work_winx,0
+			y=0,0,work_winy,work_winy
+			z=0,0,0,0
+			d3Texture x,y,z,WINDOW_MAIN,0,0,work_winx,work_winy
+			ReDraw 1*/
+			If run_mode==0||freshing==2||inputting{
+;				gSel WINDOW_CONSOLE
+;				Color 0,0,0
+;				BoxF
+;				Pos 0,0
+;				gZoom ginfo_winx,ginfo_winy,WINDOW_LABOR,0,0,ginfo_winx*MAGNIFICATION,ginfo_winy*MAGNIFICATION,1
+				If mode_full{
+					gSel WINDOW_FULL
+				}Else{
+					gSel WINDOW_MAIN
+				}
+				ReDraw 0
+				Color 0,0,0
+				BoxF
+				gMode GMODE_RGB0
+				Pos 0,0
+				gCopy WINDOW_BACKGROUND,0,0,ginfo_winx,ginfo_winy
+				Pos 0,0
+				gCopy WINDOW_GRAPHIC,0,0,ginfo_winx,ginfo_winy
+				Pos 0,0
+				gCopy WINDOW_CONSOLE,0,0,ginfo_winx,ginfo_winy
+				If ginfo_act==WINDOW_MAIN||ginfo_act==WINDOW_FULL{
+					If mode_vertical{
+						form=2,ginfo_winx-(cursor_y+1)*SIZE_Y,cursor_x*(SIZE_X*(1+trans_c2n@))
+					}Else{
+						form=2,cursor_x*(SIZE_X*(1+trans_c2n@)),cursor_y*SIZE_Y
+					}
+					ImmSetCompositionWindow hwnd_ime(mode_full),form
+					ime_text_=ime_text
+					ime_text="
+					ImmGetCompositionString hwnd_ime(mode_full),8,ime_text,str_size2
+					str_size2=stat
+					sDim ime_text,str_size2+1
+					ImmGetCompositionString hwnd_ime(mode_full),8,ime_text,str_size2
+				}
+				If function{
+					If choosing_range{
+						Color 255,255,0
+						Pos 0,(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))-SIZE_Y
+						Print "ÅkîÕö°ëIëíÜÅl"
+						Color 0,255,0
+						Pos (SIZE_X*(1+trans_c2n@))*16,(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))-SIZE_Y
+						Print "CTRL+CÅFï°é Å@CTRL+VÅFì\ïtÅ@DELÅFè¡ãé
+					}Else{
+						If ginfo_winx>=(SIZE_X*(1+trans_c2n@))*(6*10+11){
+							Repeat 10
+								work_point=Double((ginfo_winx-((SIZE_X*(1+trans_c2n@))*(6*10+8)))*((cnt>=5)+1))/3+(SIZE_X*(1+trans_c2n@))*(7*cnt-(cnt>=5))
+								Color 255,255,255
+								BoxF work_point,(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))-SIZE_Y,work_point+(SIZE_X*(1+trans_c2n@))*6-1,(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))-1
+								Color 0,0,0
+								Pos work_point,(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))-SIZE_Y
+								Print StrMid(function_str(cnt),0,6)
+							Loop
+						}Else: If ginfo_winx>=(SIZE_X*(1+trans_c2n@))*(6*5+4){
+							Repeat 5
+								work_point=Double((ginfo_winx-((SIZE_X*(1+trans_c2n@))*(6*5+4))))/2+(SIZE_X*(1+trans_c2n@))*(7*cnt)
+								Color 255,255,255
+								BoxF work_point,(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))-SIZE_Y,work_point+(SIZE_X*(1+trans_c2n@))*6-1,(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))-1
+								Color 0,0,0
+								Pos work_point,(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))-SIZE_Y
+								Print StrMid(function_str(cnt+GetKey2(KEY_SHIFT)*5),0,6)
+							Loop
+						}Else{
+							gSel WINDOW_EXTEND
+							ReDraw 0
+							Color 0,0,0
+							BoxF
+							Repeat 5
+								work_point=(SIZE_X*(1+trans_c2n@))*(7*cnt)
+								Color 255,255,255
+								BoxF work_point,0,work_point+(SIZE_X*(1+trans_c2n@))*6-1,SIZE_Y-1
+								Color 0,0,0
+								Pos work_point,0
+								Print StrMid(function_str(cnt+GetKey2(KEY_SHIFT)*5),0,6)
+							Loop
+							ReDraw 1
+							If mode_full{
+								gSel WINDOW_FULL
+							}Else{
+								gSel WINDOW_MAIN
+							}
+						}
+					}
+				}
+				If freshing{
+					ReDraw 1
+					freshing=0
+				}
+			}
+			If ginfo_act==WINDOW_MAIN||ginfo_act==WINDOW_FULL{
+				If GetKey2(KEY_F11)&&f11_remember==0{
+					If mode_full{
+						gSel WINDOW_FULL,-1
+						gSel WINDOW_MAIN,1
+						mode_full=0
+						GoSub *Refresh
+					}Else{
+						gSel WINDOW_MAIN,-1
+						gSel WINDOW_FULL,1
+						mode_full=1
+						GoSub *Refresh
+					}
+				}
+				f11_remember=GetKey2(KEY_F11)
+				If GetKey2(KEY_F12){
+					GoSub *Refresh
+				}
+				If run_mode==0&&GetKey2(KEY_MOUSE_L){
+					If driving_mode{
+						If driving_mode==2{
+							If GetKey2(KEY_SHIFT)&&choosing_range==0{
+								choosing_start_x=cursor_x
+								choosing_start_y=cursor_y
+								choosing_range=1
+								GoSub *BuildMenu
+							}
+							If ginfo_mx<ginfo_wx1+(ginfo_sizex-ginfo_winx)/2{
+								Mouse ginfo_wx1+(ginfo_sizex-ginfo_winx)/2,ginfo_my
+								driving_mode=1
+							}Else: If ginfo_mx>=ginfo_wx2-(ginfo_sizex-ginfo_winx)/2{
+								Mouse ginfo_wx2-(ginfo_sizex-ginfo_winx)/2-1,ginfo_my
+								driving_mode=1
+							}
+							If ginfo_my<ginfo_wy1+(ginfo_sizey-ginfo_winy)-(ginfo_sizex-ginfo_winx)/2{
+								Mouse ginfo_mx,ginfo_wy1+(ginfo_sizey-ginfo_winy)-(ginfo_sizex-ginfo_winx)/2
+								driving_mode=1
+							}Else: If ginfo_my>=ginfo_wy2-(ginfo_sizex-ginfo_winx)/2-statusbar*stbar_sy@stbar(ginfo_sel)-function*SIZE_Y{
+								Mouse ginfo_mx,ginfo_wy2-(ginfo_sizex-ginfo_winx)/2-statusbar*stbar_sy@stbar(ginfo_sel)-function*SIZE_Y-1
+								driving_mode=1
+							}
+							cursor_x=Limit(mousex/SIZE_X,0,ginfo_winx/SIZE_X-1)
+							cursor_y=Limit(mousey/SIZE_Y,0,(ginfo_winy-statusbar*stbar_sy@stbar(ginfo_sel))/SIZE_Y-function-1)
+							blink=0
+						}
+						If mousex/SIZE_X!=start_mouse_x/SIZE_X||mousey/SIZE_Y!=start_mouse_y/SIZE_Y||driving_count>=16{
+							If driving_mode==1{
+								Mouse-1
+								driving_mode=2
+							}
+						}
+						driving_count+
+					}Else{
+						choosing_range=0
+						start_mouse_x=mousex
+						start_mouse_y=mousey
+						driving_count=0
+						driving_mode=1
+						GoSub *BuildMenu
+					}
+				}Else{
+					If driving_mode{
+						driving_mode=0
+						Mouse
+					}
+				}
+				If GetKey2(KEY_APP)||GetKey2(KEY_MOUSE_R){
+					GoSub *Popup
+				}
+			}
+			If run_mode||mode_auto{
+				If GetKey2(KEY_CTRL)&&GetKey2('C')&&break_key_remember==0{
+					GoSub *Vofari
+				}
+			}
+			If run_mode&&inputting==0{
+				Repeat
+					If run_line>=65529{
+						OnDisplay "çDÅB
+						cursor_y+
+						cursor_x=0
+						run_mode=0
+						run_line=0
+						st_program=""
+						GoSub *BuildMenu
+						Break
+					}Else: If run_line>=0{
+						If program(run_line)==""{
+							run_line+
+						}Else{
+							Break
+						}
+					}Else{
+						Dialog "Error",1
+					}
+				Loop
+				If run_mode==0{
+					Continue
+				}
+				Split program(run_line),"ÅC",sentence
+				stat_=stat
+				work_line=sentence(0)
+				sentence=sentence(1)
+				Repeat stat_-2,2
+					sentence+"ÅC"+sentence(cnt)
+				Loop
+				GoSub *Check
+				If error{
+					run_mode=0
+					st_program=program(run_line)
+					GoSub *BuildMenu
+				}
+				If statusbar{
+					SendMsg StHwnd@stbar(ginfo_sel),SB_SETTEXT,3,program(run_line)
+				}
+				run_line+
+			}Else: If listing{
+				Repeat
+					If list_current>list_end{
+						OnDisplay "çDÅB
+						cursor_y+
+						listing=0
+						GoSub *BuildMenu
+						Break
+					}
+					If program(list_current-1)!=""{
+						work=program(list_current-1)
+						If mode_colourful{
+							Repeat
+								flag=1
+								ForEach statement_str
+									If InStr(work,0,statement_str(cnt))==0{
+										work2=StrLen(statement_str(cnt))
+										work3=StrMid(work,0,work2)
+										If work3=="Åu"{
+											work2=InStr(work,0,"Åv")-work2+4
+											work3=StrMid(work,0,work2)
+										}Else: If work3=="Å¶"{
+											work2=StrLen(work)
+											work3=work
+										}
+										work=StrMid(work,work2,(StrLen(work)-work2))
+										work_r=color_r
+										work_g=color_g
+										work_b=color_b
+										Switch statement_type(cnt)
+											Case "statement"
+											Case "system"
+											Case "object"
+											Case "particle"
+											Case "function"
+												color_r=0
+												color_g=255
+												color_b=255
+												SwBreak
+											Case "number"
+											Case "operator"
+											Case "unit"
+												color_r=255
+												color_g=0
+												color_b=255
+												SwBreak
+											Case "string"
+												color_r=255
+												color_g=255
+												color_b=0
+												SwBreak
+											Case "comment"
+											Case "conjunction"
+												color_r=0
+												color_g=255
+												color_b=0
+												SwBreak
+										SwEnd
+										OnDisplay work3
+										color_r=work_r
+										color_g=work_g
+										color_b=work_b
+										cursor_x+work2
+										flag=0
+										Break
+									}
+								Loop
+								If flag{
+									OnDisplay StrMid(work,0,1)
+									work=StrMid(work,1,StrLen(work)-1)
+									cursor_x+1
+								}
+								If StrLen(work)<=0: Break
+							Loop
+						}Else{
+							OnDisplay work
+						}
+						cursor_y+
+						cursor_x=0
+						list_current+
+						Break
+					}
+					list_current+
+				Loop
+				If GetKey2(KEY_CTRL)&&GetKey2('C'){
+					GoSub *Vofari
+				}
+			}Else: If filesing{
+				NoteSel files_list
+					If files_current>=notemax{
+						filesing=0
+					}Else{
+						NoteGet work,files_current
+						work_r=color_r:work_g=color_g:work_b=color_b
+						If StrMid(work,13,6)=="<ñ⁄ò^>"{
+							color_r=0:color_g=255:color_b=255
+						}Else: If StrMid(work,9,3)="î| "{
+							color_r=255:color_g=0:color_b=255
+						}Else{
+							color_r=255:color_g=255:color_b=0
+						}
+						OnDisplay work
+						color_r=work_r:color_g=work_g:color_b=work_b
+						cursor_y+
+						cursor_x=0
+						files_current+
+					}
+				NoteUnsel
+				If GetKey2(KEY_CTRL)&&GetKey2('C'){
+					GoSub *Vofari
+				}
+			}Else{
+				Repeat 256
+					If key(cnt){
+						key_(cnt)+
+					}Else{
+						key_(cnt)=0
+					}
+					GetKey key(cnt),cnt
+					If ginfo_act!=WINDOW_MAIN&&ginfo_act!=WINDOW_FULL{
+						key(cnt)=0
+					}
+					If ime_text_==""&&ime_text==""&&key(KEY_CTRL)==0{
+						If (key_(cnt)==0||key_(cnt)>=32)&&key_(cnt)\3==0&&key(cnt)!=0{
+							If GetKey2(KEY_GRPH)==0{
+								If key($F3)!=0{
+									If '0'<=cnt&&cnt<='9'||('A'<=cnt&&cnt<='Z')||cnt==' '{
+										work_key=cnt+('A'<=cnt&&cnt<='Z'&&key(KEY_SHIFT)==0)*('a'-'A')+('1'<=cnt&&cnt<='9'&&GetKey2(KEY_SHIFT))*('!'-'1')
+									}Else: If KEY_NUM_0<=cnt&&cnt<=KEY_NUM_9{
+										work_key=cnt-(KEY_NUM_0-'0')
+									}Else{
+										Switch cnt
+											Case KEY_ASTERISK
+												work_key=':'+('*'-':')*GetKey2(KEY_SHIFT)
+												SwBreak
+											Case KEY_NUM_AST
+												work_key='*'
+												SwBreak
+											Case KEY_PLUS
+												work_key=';'+('+'-';')*GetKey2(KEY_SHIFT)
+												SwBreak
+											Case KEY_NUM_PLS
+												work_key='+'
+												SwBreak
+											Case KEY_COMMA
+												work_key=','+('<'-',')*GetKey2(KEY_SHIFT)
+												SwBreak
+											Case KEY_MINUS
+											Case KEY_NUM_MNS
+												work_key='-'+('='-'-')*GetKey2(KEY_SHIFT)
+												SwBreak
+											Case KEY_DOT
+											Case KEY_NUM_DOT
+												work_key='.'+('>'-'.')*GetKey2(KEY_SHIFT)
+												SwBreak
+											Case KEY_SLASH
+											Case KEY_NUM_SLSH
+												work_key='/'+('?'-'/')*GetKey2(KEY_SHIFT)
+												SwBreak
+											Case KEY_AT
+												work_key='@'+('`'-'@')*GetKey2(KEY_SHIFT)
+												SwBreak
+											Case KEY_BRACE_L
+												work_key='['+('{'-'[')*GetKey2(KEY_SHIFT)
+												SwBreak
+											Case KEY_BRACE_R
+												work_key=']'+('}'-']')*GetKey2(KEY_SHIFT)
+												SwBreak
+											Case KEY_BAR
+												work_key='\\'+('_'-'\\')*GetKey2(KEY_SHIFT)
+												SwBreak
+											Case KEY_PIPE
+												work_key='\\'+('|'-'\\')*GetKey2(KEY_SHIFT)
+												SwBreak
+											Case KEY_HAT
+												work_key='^'+('~'-'^')*GetKey2(KEY_SHIFT)
+												SwBreak
+											Default
+												work_key=0
+												SwBreak
+										SwEnd
+									}
+								}Else{
+									work_key=0
+								}
+							}Else{
+								If '1'<=cnt&&cnt<='9'{
+									work_key=number(cnt-'1')
+								}Else{
+									Switch cnt
+										Case '0'
+											work_oops=data((cursor_x>=2)*(cursor_x-2)+(cursor_x<2)*(cursor_x+ginfo_winx/(SIZE_X*(1+trans_c2n@))-2),cursor_y-(cursor_x<2))and$FF
+											work_oops2=data((cursor_x>=1)*(cursor_x-1)+(cursor_x<1)*(cursor_x+ginfo_winx/(SIZE_X*(1+trans_c2n@))-1),cursor_y-(cursor_x<1))and$FF
+											Switch StrF("%c%c",work_oops,work_oops2)
+												Case "è\"
+													work_key="ì˘
+													SwBreak
+												Case "ì˘"
+													work_key="ôø
+													SwBreak
+												Case "ôø"
+												Default
+													work_key="è\
+													SwBreak
+											SwEnd
+											Switch StrF("%c%c",work_oops,work_oops2)
+												Case "è\"
+												Case "ì˘"
+												Case "ôø"
+													cursor_x-2
+													If cursor_x<0{
+														cursor_y-
+														cursor_x+ginfo_winx/(SIZE_X*(1+trans_c2n@))
+													}
+													GoSub *Refresh
+													SwBreak
+											SwEnd
+											SwBreak
+										Case KEY_MINUS
+											work_key="ïS
+											SwBreak
+										Case KEY_HAT
+											work_key="êÁ
+											SwBreak
+										Case KEY_PIPE
+											work_oops=data((cursor_x>=2)*(cursor_x-2)+(cursor_x<2)*(cursor_x+ginfo_winx/(SIZE_X*(1+trans_c2n@))-2),cursor_y-(cursor_x<2))and$FF
+											work_oops2=data((cursor_x>=1)*(cursor_x-1)+(cursor_x<1)*(cursor_x+ginfo_winx/(SIZE_X*(1+trans_c2n@))-1),cursor_y-(cursor_x<1))and$FF
+											Switch StrF("%c%c",work_oops,work_oops2)
+												Case "‰›"
+													work_key="â≠
+													SwBreak
+												Case "â≠"
+													work_key="íõ
+													SwBreak
+												Case "íõ"
+													work_key="ãû
+													SwBreak
+												Case "ãû"
+													work_key="ö¥
+													SwBreak
+												Case "ö¥"
+													work_key="û`
+													SwBreak
+												Case "û`"
+													work_key="èı
+													SwBreak
+												Case "èı"
+													work_key="ça
+													SwBreak
+												Case "ça"
+													work_key="ä¿
+													SwBreak
+												Case "ä¿"
+													work_key="ê≥
+													SwBreak
+												Case "ê≥"
+													work_key="ç⁄
+													SwBreak
+												Case "ç⁄"
+													work_key="ã…
+													SwBreak
+												Case "ã…"
+												Default
+													work_key="‰›
+													SwBreak
+											SwEnd
+											Switch StrF("%c%c",work_oops,work_oops2)
+												Case "‰›"
+												Case "â≠"
+												Case "íõ"
+												Case "ãû"
+												Case "ö¥"
+												Case "û`"
+												Case "èı"
+												Case "ça"
+												Case "ä¿"
+												Case "ê≥"
+												Case "ç⁄"
+												Case "ã…"
+													cursor_x-2
+													If cursor_x<0{
+														cursor_y-
+														cursor_x+ginfo_winx/(SIZE_X*(1+trans_c2n@))
+													}
+													GoSub *Refresh
+													SwBreak
+											SwEnd
+											SwBreak
+										Case KEY_AT
+											Repeat 2
+												work_oops(cnt)=data((cursor_x>=2-cnt)*(cursor_x-(2-cnt))+(cursor_x<2-cnt)*(cursor_x+ginfo_winx/(SIZE_X*(1+trans_c2n@))-(2-cnt)),cursor_y-(cursor_x<2-cnt))and$FF
+											Loop
+											Switch StrF("%c%c",work_oops(0),work_oops(1))
+												Case "å∏"
+													work_key="ïâ
+													SwBreak
+												Default
+													work_key="å∏
+													SwBreak
+											SwEnd
+											Switch StrF("%c%c",work_oops(0),work_oops(1))
+												Case "å∏"
+												Case "ïâ"
+													cursor_x-2
+													If cursor_x<0{
+														cursor_y-
+														cursor_x+ginfo_winx/(SIZE_X*(1+trans_c2n@))
+													}
+													GoSub *Refresh
+													SwBreak
+											SwEnd
+											SwBreak
+										Case KEY_PLUS
+											work_key="â¡
+											SwBreak
+										Case KEY_ASTERISK
+											work_key="ò©à»
+											SwBreak
+										Case KEY_SLASH
+											work_key="èúà»
+											SwBreak
+										Case 'P'
+											work_key="ët
+											SwBreak
+										Case 'S'
+											work_key="é~
+											SwBreak
+										Case 'F'
+											work_key="‡®
+											SwBreak
+										Case 'A'
+											work_key="âó
+											SwBreak
+										Case 'N'
+											work_key="ëÊ
+											SwBreak
+										Case 'O'
+											work_key="äJ
+											SwBreak
+										Case 'C'
+											work_key="ï¬
+											SwBreak
+										Case 'I'
+											work_key="ãï
+											SwBreak
+										Case KEY_BAR
+											work_key="óÎ
+											SwBreak
+										Case KEY_DOT
+											work_key="Íy
+											SwBreak
+										Case KEY_COMMA
+											work_key="‰o
+											SwBreak
+										Case 'L'
+											Repeat 6
+												work_oops(cnt)=data((cursor_x>=6-cnt)*(cursor_x-(6-cnt))+(cursor_x<6-cnt)*(cursor_x+ginfo_winx/(SIZE_X*(1+trans_c2n@))-(6-cnt)),cursor_y-(cursor_x<6-cnt))and$FF
+											Loop
+											If StrF("%c%c%c%c%c%c",work_oops(0),work_oops(1),work_oops(2),work_oops(3),work_oops(4),work_oops(5))=="ïsìôâó"{
+												work_key="ê•    "
+												cursor_x-6
+											}Else: If StrF("%c%c%c%c",work_oops(2),work_oops(3),work_oops(4),work_oops(5))=="ìôâó"{
+												work_key="ïsìôâó
+												cursor_x-4
+											}Else: If StrF("%c%c",work_oops(4),work_oops(5))=="ê•"{
+												work_key="ìôâó
+												cursor_x-2
+											}Else{
+												work_key="ê•
+											}
+											If cursor_x<0{
+												cursor_y-
+												cursor_x+ginfo_winx/(SIZE_X*(1+trans_c2n@))
+											}
+											GoSub *Refresh
+											SwBreak
+										Case KEY_BRACE_L
+											work_key="è¨âó
+											SwBreak
+										Case KEY_BRACE_R
+											work_key="ëÂâó
+											SwBreak
+										Case 'W'
+											Repeat 2
+												work_oops(cnt)=data((cursor_x>=2-cnt)*(cursor_x-(2-cnt))+(cursor_x<2-cnt)*(cursor_x+ginfo_winx/(SIZE_X*(1+trans_c2n@))-(2-cnt)),cursor_y-(cursor_x<2-cnt))and$FF
+											Loop
+											Switch StrF("%c%c",work_oops(0),work_oops(1))
+												Case "ïù"
+													work_key="çÇ
+													SwBreak
+												Default
+													work_key="ïù
+													SwBreak
+											SwEnd
+											Switch StrF("%c%c",work_oops(0),work_oops(1))
+												Case "ïù"
+												Case "çÇ"
+													cursor_x-2
+													If cursor_x<0{
+														cursor_y-
+														cursor_x+ginfo_winx/(SIZE_X*(1+trans_c2n@))
+													}
+													GoSub *Refresh
+													SwBreak
+											SwEnd
+											SwBreak
+										Case 'M'
+											work_key="éß
+											SwBreak
+										Default
+											work_key=""
+											SwBreak
+									SwEnd
+								}
+							}
+							If cnt==' '||('0'<=cnt&&cnt<='9')||('A'<=cnt&&cnt<='Z')||(KEY_NUM_0<=cnt&&cnt<=KEY_NUM_9)||(KEY_NUM_AST<=cnt&&cnt<=KEY_NUM_SLSH)||(KEY_ASTERISK<=cnt&&cnt<=KEY_AT)||(KEY_BRACE_L<=cnt&&cnt<=KEY_HAT)||cnt==KEY_BAR{
+								If GetKey2(KEY_GRPH)==0{
+									If key($F3)!=0{
+;										OnDisplay StrF("%c",work_key)
+										data(cursor_x,cursor_y)=work_key or(color_r<<8)or(color_g<<16)or(color_b<<24)
+										cursor_x+1+trans_c2n
+										If cursor_x>=(ginfo_winx*(mode_vertical==0)+mode_vertical*(ginfo_winy-statusbar*stbar_sy@stbar(ginfo_sel)-function*SIZE_Y))/(SIZE_X*(1+trans_c2n@)){
+											cursor_x=0
+											cursor_y+
+										}
+									}
+								}Else{
+									Repeat StrLen(work_key)
+										data(cursor_x,cursor_y)=Peek(work_key,cnt)or(color_r<<8)or(color_g<<16)or(color_b<<24)
+										cursor_x+
+										If cursor_x>=(ginfo_winx*(mode_vertical==0)+mode_vertical*(ginfo_winy-statusbar*stbar_sy@stbar(ginfo_sel)-function*SIZE_Y))/(SIZE_X*(1+trans_c2n@)){
+											cursor_x=0
+											cursor_y+
+										}
+									Loop
+									Split work_key," "
+									cursor_x-(stat-1)
+								}
+							}
+						}
+						If key(cnt)&&(key_(cnt)==0||key_(cnt)>=48)&&($08<=cnt&&cnt<=$7F){
+							blink=0
+						}
+					}
+				Loop
+				If ime_text_==""&&ime_text==""{
+					If dialog_close_soon==0{
+						If GetKey2(KEY_GRPH)==0&&GetKey2(KEY_CTRL)==0{
+							ForEach function_str
+								If KEY_F1+cnt==KEY_F10{
+									Continue
+								}
+								InKey(KEY_F1+cnt){
+									Split function_str(cnt),"\r",work_miteruzo
+									work_stat=stat
+									Repeat work_stat
+										OnDisplay work_miteruzo(cnt)
+										cursor_x+StrLen(work_miteruzo(cnt))
+										If cnt<work_stat-1{
+											GoSub *OnReturn
+										}
+									Loop
+								}
+							Loop
+						}
+						If choosing_range{
+							If cursor_x{
+								work_end_x=cursor_x-1
+								work_end_y=cursor_y
+							}Else{
+								work_end_x=ginfo_winx/(SIZE_X*(1+trans_c2n@))-1
+								work_end_y=cursor_y-1
+							}
+							If work_end_y<choosing_start_y{
+								Invert work_end_x+1,work_end_y,choosing_start_x,choosing_start_y
+							}Else: If work_end_y>choosing_start_y{
+								Invert choosing_start_x,choosing_start_y,work_end_x,work_end_y
+							}Else: If choosing_start_x>work_end_x{
+								Invert work_end_x+1,choosing_start_y,choosing_start_x-1,work_end_y
+							}Else{
+								Invert choosing_start_x,choosing_start_y,work_end_x,work_end_y
+							}
+							If GetKey2(KEY_SHIFT)==0&&(GetKey2(KEY_UP)||GetKey2(KEY_DOWN)||GetKey2(KEY_LEFT)||GetKey2(KEY_RIGHT)){
+								choosing_range=0
+								GoSub *BuildMenu
+							}Else{
+								Repeat 122
+									Switch cnt
+										Case KEY_MOUSE_L
+										Case KEY_MOUSE_R
+										Case KEY_MOUSE_CENTRE
+										Case KEY_BREAK
+										Case KEY_SHIFT
+										Case KEY_CTRL
+										Case KEY_GRPH
+										Case KEY_UP
+										Case KEY_DOWN
+										Case KEY_LEFT
+										Case KEY_RIGHT
+										Case KEY_F1
+										Case KEY_F2
+										Case KEY_F3
+										Case KEY_F4
+										Case KEY_F5
+										Case KEY_F6
+										Case KEY_F7
+										Case KEY_F8
+										Case KEY_F9
+										Case KEY_F10
+										Case KEY_F11
+										Case KEY_F12
+											Continue
+											SwBreak
+									SwEnd
+									If key(cnt){
+										choosing_range=0
+										GoSub *BuildMenu
+										Break
+									}
+								Loop
+							}
+						}
+						If run_mode==0{
+							If GetKey2(KEY_SHIFT)&&(GetKey2(KEY_UP)||GetKey2(KEY_DOWN)||GetKey2(KEY_LEFT)||GetKey2(KEY_RIGHT)){
+								If choosing_range==0{
+									choosing_range=1
+									choosing_start_x=cursor_x
+									choosing_start_y=cursor_y
+									GoSub *BuildMenu
+								}
+							}
+						}
+						InKey(KEY_RETURN){
+							GoSub *OnReturn
+						}Else: InKey(KEY_BS){
+							cursor_x-
+							If inputting{
+								If cursor_x<2{
+									cursor_x=2
+								}
+							}Else{
+								If cursor_x<0{
+									If cursor_y>0{
+										If mode_vertical{
+											cursor_x=ginfo_winy/(SIZE_X*(1+trans_c2n))-1-function*SIZE_Y/SIZE_X
+										}Else{
+											cursor_x=ginfo_winx/(SIZE_X*(1+trans_c2n))-1
+										}
+										cursor_y-
+									}Else{
+										cursor_x=0
+									}
+								}
+							}
+							Repeat Length(data)-cursor_x-1,cursor_x
+								data(cnt,cursor_y)=data(cnt+1,cursor_y)
+							Loop
+						}Else: InKey(KEY_DEL){
+							cursor_x-(1+trans_c2n)
+							If inputting{
+								If cursor_x<2{
+									cursor_x=2
+								}
+							}Else{
+								If cursor_x<0: cursor_x=0
+							}
+							Repeat Length(data)-cursor_x-2,cursor_x
+								data(cnt,cursor_y)=data(cnt+1+trans_c2n,cursor_y)
+							Loop
+						}Else: InKey(KEY_INS){
+							If GetKey2(KEY_CTRL){
+								mode_insert=mode_insert==0
+							}Else{
+								Repeat ginfo_winx/(SIZE_X*(1+trans_c2n@))-cursor_x
+									data(ginfo_winx/(SIZE_X*(1+trans_c2n@))-cnt,cursor_y)=data(ginfo_winx/(SIZE_X*(1+trans_c2n@))-cnt-1,cursor_y)
+								Loop
+								data(cursor_x,cursor_y)=' '
+							}
+						}Else: InKey(KEY_LEFT){
+							cursor_x-
+							If cursor_x>0{
+								work=(data(cursor_x-1,cursor_y)and$FF)
+								If $81<=work&&work<=$9F||($E0<=work&&work<=$FC){
+									cursor_x-
+								}
+							}
+							If inputting{
+								If cursor_x<2{
+									cursor_x=2
+								}
+							}Else{
+								If cursor_x<0{
+									If cursor_y>0{
+										If mode_vertical{
+											cursor_x=(ginfo_winy-statusbar*stbar_sy@stbar(ginfo_sel)-function*SIZE_Y)/(SIZE_X*(1+trans_c2n@))-1
+										}Else{
+											cursor_x=ginfo_winx/(SIZE_X*(1+trans_c2n@))-1
+										}
+										cursor_y-
+									}Else{
+										cursor_x=0
+									}
+								}
+							}
+						}Else: InKey(KEY_UP){
+							If run_mode==0{
+								cursor_y-
+								If cursor_y<0{
+									cursor_y=0
+								}
+							}
+						}Else: InKey(KEY_RIGHT){
+							cursor_x+
+							If cursor_x<ginfo_winx/(SIZE_X*(1+trans_c2n@))-1{
+								work=(data(cursor_x-1,cursor_y)and$FF)
+								If $81<=work&&work<=$9F||($E0<=work&&work<=$FC){
+									cursor_x+
+								}
+							}
+							If cursor_x>=(ginfo_winx*(mode_vertical==0)+(ginfo_winy-statusbar*stbar_sy@stbar(ginfo_sel)-function*SIZE_Y)*mode_vertical)/(SIZE_X*(1+trans_c2n@)){
+								cursor_x=0
+								cursor_y+
+							}
+						}Else: InKey(KEY_DOWN){
+							If run_mode==0{
+								cursor_y+
+								If mode_vertical{
+									If cursor_y>=ginfo_winx/SIZE_Y{
+										cursor_y=ginfo_winx/SIZE_Y-1
+									}
+								}Else{
+									If cursor_y>=(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))/SIZE_Y-function{
+										cursor_y=(ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))/SIZE_Y-function-1
+									}
+								}
+							}
+						}Else: InKey(KEY_ROLLDOWN){
+							If run_mode==0{
+								ScrollDisplay -1
+								GoSub *Refresh
+								cursor_y-
+							}
+						}Else: InKey(KEY_ROLLUP){
+							If run_mode==0{
+								ScrollDisplay 1
+								GoSub *Refresh
+								cursor_y+
+							}
+						}
+						If GetKey2(KEY_CTRL): InKey('V'){
+							Command COMMAND_PASTE
+						}
+						mousew_=mousew
+						If run_mode==0{
+							If mousew_{
+								ScrollDisplay (mousew_<0)-(mousew_>0)
+								cursor_y+(mousew_<0)-(mousew_>0)
+								GoSub*Refresh
+							}
+						}
+					}
+				}
+				If ginfo_act==WINDOW_MAIN||ginfo_act==WINDOW_FULL{
+					ime_comp="
+					s=0
+					ImmGetCompositionString hwnd_ime(mode_full),$800,ime_comp,s
+					s=stat
+					sdim ime_comp,s+1
+					ImmGetCompositionString hwnd_ime(mode_full),$800,ime_comp,s
+					If s==0{
+						ss=0
+					}
+					If s!=0&&ss==0{
+						str1_=ime_comp
+						ss=1
+					}else{
+						ime_comp="
+					}
+					If ime_text==""&&key($F3)==0: InKey(' '){
+						ime_comp="Å@
+					}
+					OnDisplay ime_comp
+					cursor_y+(cursor_x+StrLen(ime_comp))/(ginfo_winx/(SIZE_X*(1+trans_c2n@)))
+					cursor_x=(cursor_x+StrLen(ime_comp))\(ginfo_winx/(SIZE_X*(1+trans_c2n@)))
+				}
+			}
+			If cursor_y>=((ginfo_winy-statusbar@*stbar_sy@stbar(ginfo_sel))*(mode_vertical==0)+mode_vertical*ginfo_winx)/SIZE_Y-function*(mode_vertical==0){
+				ScrollDisplay 1
+				gSel WINDOW_CONSOLE
+;				gSel WINDOW_LABOR
+				Color 0,0,0
+				BoxF
+				If mode_full{
+					gSel WINDOW_FULL
+				}Else{
+					gSel WINDOW_MAIN
+				}
+			}
+			If run_mode==0||freshing==1||inputting{
+				work_winx=ginfo_winx
+				work_winy=ginfo_winy-function*SIZE_Y-statusbar*stbar_sy@stbar(ginfo_sel)
+				gSel WINDOW_CONSOLE
+;				gSel WINDOW_LABOR
+				Repeat work_winx/(SIZE_X*(1+trans_c2n@))*(work_winy/SIZE_Y)
+					If mode_vertical{
+						work=Peek(data,(cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))*MAX_X+cnt\(work_winy/(SIZE_X*(1+trans_c2n@))))*4)
+					}Else{
+						work=Peek(data,(cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))*MAX_X+cnt\(work_winx/(SIZE_X*(1+trans_c2n@))))*4)
+					}
+					If data(cnt\((work_winx*(mode_vertical==0)+work_winy*mode_vertical)/(SIZE_X*(1+trans_c2n@))),cnt/((work_winx*(mode_vertical==0)+work_winy*mode_vertical)/(SIZE_X*(1+trans_c2n@))))!=data_work(cnt\((work_winx*(mode_vertical==0)+work_winy*mode_vertical)/(SIZE_X*(1+trans_c2n@))),cnt/((work_winx*(mode_vertical==0)+work_winy*mode_vertical)/(SIZE_X*(1+trans_c2n@)))){
+						If full{
+							Color 0,0,0
+							If mode_vertical{
+								BoxF work_winx-cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))*SIZE_Y-1,work_winx-(cnt\(work_winy/(SIZE_X*(1+trans_c2n@)))-1)*(SIZE_X*(1+trans_c2n@))-1,work_winx-(cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))+1)*SIZE_Y,work_winx-SIZE_Y-(cnt\(work_winy/(SIZE_X*(1+trans_c2n@)))+1)*(SIZE_X*(1+trans_c2n@))-1
+							}Else{
+								BoxF (cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))-1)*(SIZE_X*(1+trans_c2n@))/**MAGNIFICATION*/,cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))*SIZE_Y/**MAGNIFICATION*/,(cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))+1)*(SIZE_X*(1+trans_c2n@))/**MAGNIFICATION*/-1,(cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))+1)*SIZE_Y/**MAGNIFICATION*/-1
+								gSel WINDOW_BACKGROUND
+								Color colour_r,colour_g,colour_b
+								BoxF (cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))-1)*(SIZE_X*(1+trans_c2n@))/**MAGNIFICATION*/,cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))*SIZE_Y/**MAGNIFICATION*/,(cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))+1)*(SIZE_X*(1+trans_c2n@))/**MAGNIFICATION*/-1,(cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))+1)*SIZE_Y/**MAGNIFICATION*/-1
+								gSel WINDOW_CONSOLE
+							}
+							Color work_r,work_g,work_b
+							If mode_graphical_font{
+								gMode GMODE_RGB0
+								If mode_vertical{
+									gCopy WINDOW_LABOR,(Peek(data,(cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))*MAX_X+cnt\(work_winy/(SIZE_X*(1+trans_c2n@)))-1)*4)+work*256)\256*SIZE_Y,(Peek(data,(cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))*MAX_X+cnt\(work_winy/(SIZE_X*(1+trans_c2n@)))-1)*4)+work*256)/256*SIZE_Y,SIZE_Y,SIZE_Y
+									BoxSub work_winx-cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))*SIZE_Y-1,work_winx-(cnt\(work_winy/(SIZE_X*(1+trans_c2n@)))-1)*(SIZE_X*(1+trans_c2n@))-1,work_winx-(cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))+1)*SIZE_Y,work_winx-SIZE_Y-(cnt\(work_winy/(SIZE_X*(1+trans_c2n@)))+1)*(SIZE_X*(1+trans_c2n@))-1
+								}Else{
+									gCopy WINDOW_LABOR,(Peek(data,(cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))*MAX_X+cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))-1)*4)+work*256)\256*SIZE_Y,(Peek(data,(cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))*MAX_X+cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))-1)*4)+work*256)/256*SIZE_Y,SIZE_Y,SIZE_Y
+									BoxSub (cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))-1)*(SIZE_X*(1+trans_c2n@)),cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))*SIZE_Y,(cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))+1)*(SIZE_X*(1+trans_c2n@))-1,(cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))+1)*SIZE_Y-1
+								}
+							}Else{
+								If mode_vertical{
+									Print StrF("%c%c",Peek(data,(cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))*MAX_X+cnt\(work_winy/(SIZE_X*(1+trans_c2n@)))-1)*4),work)
+								}Else{
+									Print StrF("%c%c",Peek(data,(cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))*MAX_X+cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))-1)*4),work)
+								}
+							}
+							If trans_c2n{
+								Font font_name_,SIZE_Y/2
+								Color work_r,work_g,work_b
+								Pos cnt\(work_winx/SIZE_X/2)*(SIZE_X*2),cnt/(work_winx/SIZE_X/2)*SIZE_Y+SIZE_Y/2
+								Switch StrF("%c%c",Peek(data,(cnt/(work_winx/SIZE_X/2)*MAX_X+cnt\(work_winx/SIZE_X/2)-1)*4),work)
+									Case "îı"
+										Print "Éw
+										SwBreak
+									Case "çD"
+										Print "ÉV
+										SwBreak
+									Case "ãL"
+										Print "ÉZ
+										SwBreak
+									Case "óp"
+										Print "ÉêÉã
+										SwBreak
+									Case "î\"
+										Print "ÉV
+										SwBreak
+									Case "Åv"
+										Print "Éí
+										SwBreak
+									Case "Ê§"
+										Print "ÉÅ
+										SwBreak
+									Case "â¡"
+										Print "Éw
+										SwBreak
+									Case "êq"
+										Print "ÉlÉà
+										SwBreak
+								SwEnd
+								Pos cnt\(work_winx/SIZE_X/2)*(SIZE_X*2),cnt/(work_winx/SIZE_X/2)*SIZE_Y
+								Switch StrF("%c%c",Peek(data,(cnt/(work_winx/SIZE_X/2)*MAX_X+cnt\(work_winx/SIZE_X/2)-1)*4),work)
+									Case "Åv"
+										Print "àÍ
+										SwBreak
+									Case "Ê§"
+									Case "ãL"
+									Case "êq"
+										Print "ìÒ
+										SwBreak
+								SwEnd
+							}
+							full=0
+						}Else{
+							If mode_vertical{
+								cnt_=cnt+1
+								Switch StrF("%c%c",work,Peek(data,(cnt_/(work_winy/(SIZE_X*(1+trans_c2n)))*MAX_X+cnt_\(work_winy/(SIZE_X*(1+trans_c2n))))*4))
+									Case "ÅB"
+									Case "ÅA"
+									Case "ÅD"
+									Case "ÅC"
+										Pos (work_winx-SIZE_Y)-cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))*SIZE_Y+SIZE_Y/2,cnt\(work_winy/(SIZE_X*(1+trans_c2n@)))*(SIZE_X*(1+trans_c2n@))-SIZE_Y/2
+										SwBreak
+									Default
+										Pos work_winx-(cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))+1)*SIZE_Y,cnt\(work_winy/(SIZE_X*(1+trans_c2n@)))*(SIZE_X*(1+trans_c2n@))
+										SwBreak
+								SwEnd
+							}Else{
+								Pos cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))*(SIZE_X*(1+trans_c2n@)),cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))*SIZE_Y
+							}
+							If mode_vertical{
+								work_r=Peek(data,(cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))*MAX_X+cnt\(work_winy/(SIZE_X*(1+trans_c2n@))))*4+1)
+								work_g=Peek(data,(cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))*MAX_X+cnt\(work_winy/(SIZE_X*(1+trans_c2n@))))*4+2)
+								work_b=Peek(data,(cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))*MAX_X+cnt\(work_winy/(SIZE_X*(1+trans_c2n@))))*4+3)
+							}Else{
+								work_r=Peek(data,(cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))*MAX_X+cnt\(work_winx/(SIZE_X*(1+trans_c2n@))))*4+1)
+								work_g=Peek(data,(cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))*MAX_X+cnt\(work_winx/(SIZE_X*(1+trans_c2n@))))*4+2)
+								work_b=Peek(data,(cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))*MAX_X+cnt\(work_winx/(SIZE_X*(1+trans_c2n@))))*4+3)
+							}
+							If $81<=work&&work<=$9F||($E0<=work&&work<=$FC)&&Peek(data,(cnt/((work_winx*(mode_vertical==0)+work_winy*mode_vertical)/(SIZE_X*(1+trans_c2n@)))*MAX_X+cnt\((work_winx*(mode_vertical==0)+work_winy*mode_vertical)/(SIZE_X*(1+trans_c2n@)))+1)*4)!=0{
+								full=1
+							}Else{
+								Color 0,0,0
+								If mode_vertical{
+									BoxF work_winx-cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))*SIZE_Y,cnt\(work_winy/(SIZE_X*(1+trans_c2n@)))*(SIZE_X*(1+trans_c2n@)),work_winx-(cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))+1)*SIZE_Y-1,(cnt\(work_winy/(SIZE_X*(1+trans_c2n@)))+1)*(SIZE_X*(1+trans_c2n@))-1
+								}Else{
+									BoxF cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))*(SIZE_X*(1+trans_c2n@)),cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))*SIZE_Y,(cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))+1)*(SIZE_X*(1+trans_c2n@))-1,(cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))+1)*SIZE_Y-1
+									gSel WINDOW_BACKGROUND
+									Color colour_r,colour_g,colour_b
+									BoxF cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))*(SIZE_X*(1+trans_c2n@)),cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))*SIZE_Y,(cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))+1)*(SIZE_X*(1+trans_c2n@))-1,(cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))+1)*SIZE_Y-1
+									gSel WINDOW_CONSOLE
+								}
+								Color work_r,work_g,work_b
+								If mode_graphical_font{
+									gMode GMODE_RGB0
+									If mode_vertical{
+										gCopy WINDOW_LABOR,work\256*SIZE_Y,work/256*SIZE_Y,SIZE_Y,SIZE_X*(1+trans_c2n@)
+										BoxSub work_winx-cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))*SIZE_Y-1,cnt\(work_winy/(SIZE_X*(1+trans_c2n@)))*(SIZE_X*(1+trans_c2n@)),work_winx-(cnt/(work_winy/(SIZE_X*(1+trans_c2n@)))+1)*SIZE_Y,(cnt\(work_winy/(SIZE_X*(1+trans_c2n@)))+1)*(SIZE_X*(1+trans_c2n@))-1
+									}Else{
+										gCopy WINDOW_LABOR,work\256*SIZE_Y,work/256*SIZE_Y,SIZE_X*(1+trans_c2n@),SIZE_Y
+										BoxSub cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))*(SIZE_X*(1+trans_c2n@)),cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))*SIZE_Y,(cnt\(work_winx/(SIZE_X*(1+trans_c2n@)))+1)*(SIZE_X*(1+trans_c2n@))-1,(cnt/(work_winx/(SIZE_X*(1+trans_c2n@)))+1)*SIZE_Y-1
+									}
+								}Else{
+									Print StrF("%c",work)
+								}
+							}
+						}
+					}
+				Loop
+				If mode_full{
+					gSel WINDOW_FULL
+				}Else{
+					gSel WINDOW_MAIN
+				}
+				MemCpy data_work,data,4*Length(data)*Length2(data)
+				GoSub *BuildStatus
+				If freshing{
+					freshing=2
+				}
+			}
+			If run_mode==0&&listing==0&&filesing==0||inputting{
+				If blink\32<16{
+					work=Peek(data,(cursor_y*MAX_X+cursor_x)*4)
+					If $81<=work&&work<=$9F||($E0<=work&&work<=$FC){
+						Invert cursor_x,cursor_y,cursor_x+1,cursor_y
+					}Else{
+						Invert cursor_x,cursor_y,cursor_x,cursor_y
+					}
+				}
+				blink+
+			}
+			If run_mode==0||inputting{
+				ReDraw 1
+			}
+			dialog_close_soon=0
+		}Else{
+			If extension{
+				gSel WINDOW_EXTEND,-1
+				If mode_full{
+					gSel WINDOW_FULL
+				}Else{
+					gSel WINDOW_MAIN
+				}
+				extension=0
+			}
+		}
+		If run_mode==0||cnt\1000==0||inputting{
+			Wait 0	; ÉRÉìÉsÉÖÅ[É^ÇÃÇŒÇ©!!
+		}
+	Loop
+	Stop
+
+*Check
+	programming=0
+	ForEach number
+		If StrMid(sentence,0,2)==number(cnt){
+			programming=1
+			Break
+		}
+	Loop
+	If programming{
+		reading="
+		For i,0,StrLen(sentence),2
+			work=0
+			ForEach number
+				If StrMid(sentence,i,2)==number(cnt){
+					reading+number(cnt)
+					work=1
+					Break
+				}
+			Loop
+			If Length(program)>Int(Kan2Arabia(reading))-1&&Int(Kan2Arabia(reading))-1>=0{
+				If work==0{
+					If StrMid(sentence,i,2)!="ÅC"{
+						program(Int(Kan2Arabia(reading))-1)=reading+"ÅC"+StrMid(sentence,i,StrLen(sentence)-i)
+					}Else{
+						If reading+"ÅC"==sentence{
+							program(Int(Kan2Arabia(reading))-1)="
+							_Break
+						}Else{
+							program(Int(Kan2Arabia(reading))-1)=reading+StrMid(sentence,i,StrLen(sentence)-i)
+						}
+					}
+					Repeat Limit(HowMany(program(Int(Kan2Arabia(reading))-1),"Åu")-HowMany(program(Int(Kan2Arabia(reading))-1),"Åv"),0)
+						program(Int(Kan2Arabia(reading))-1)+"Åv
+					Loop
+					work6=program(Int(Kan2Arabia(reading))-1)
+					Split work6,"Å¶",work6
+					work7=stat
+					If StrLen(work6((work7-2)*(work7>=2)))!=0&&StrMid(work6((work7-2)*(work7>=2)),StrLen(work6((work7-2)*(work7>=2)))-2,2)!="ÅB"&&StrMid(work6((work7-2)*(work7>=2)),StrLen(work6((work7-2)*(work7>=2)))-2,2)!="ÅC"{
+						work6((work7-2)*(work7>=2))+"ÅB
+					}
+					program(Int(Kan2Arabia(reading))-1)=""
+					Repeat work7
+						program(Int(Kan2Arabia(reading))-1)+work6(cnt)
+						If cnt<work7-1{
+							program(Int(Kan2Arabia(reading))-1)+"Å¶
+						}
+					Loop
+					_Break
+				}Else: If i==StrLen(sentence)-2{
+					If reading==sentence||reading+"ÅC"==sentence{
+						program(Int(Kan2Arabia(reading))-1)=""
+					}
+				}
+				If mode_auto{
+					auto_num=Int(Kan2Arabia(reading))+auto_inc
+				}
+			}Else{
+;				error=ERROR_LINE_NOT_FOUND+1
+				_Break
+			}
+		Next
+	}Else{
+		stat__=1
+		stat_=1
+		Split sentence,"Åu",work_a
+		stat_=stat
+		work_c=""
+		Split work_a(0),"éß",sentence
+		sentence_num=stat-1
+		Repeat stat_-1,1
+			Split work_a(cnt),"Åv",work_b
+			stat_=stat
+			work_a(cnt)=work_b(0)
+			cnt__=cnt
+			Repeat stat_-1,1
+				cnt_=cnt
+				Split work_b(cnt),"éß",work_c
+				stat__=stat
+				Repeat stat-1,1
+					sentence(sentence_num+cnt)=work_c(cnt)
+				Loop
+				work_a(cnt__)+"Åv"+work_c(0)
+			Loop
+			sentence(sentence_num)+"Åu"+work_a(cnt)
+			sentence_num+stat__-1
+		Loop
+		If Length(sentence)<=sentence_num{
+			sentence(sentence_num)=""
+		}
+		Repeat sentence_num+1
+			CheckSentence sentence(cnt)
+			error=stat
+			If error{
+				Break
+			}
+		Loop
+		If (run_mode==0||error!=0)&&StrMid(sentence(sentence_num),0,4)!="àœÂj"&&listing==0&&filesing==0{
+			OnDisplay "çDÅB
+			cursor_y+
+			cursor_x=0
+		}
+	}
+	Return
+	Stop
+
+*BuildEditor
+	Screen WINDOW_EDIT,ginfo_dispx,ginfo_dispy,SCREEN_HIDE
+	SetWindowLong hwnd,-16,GetWindowLong(hwnd,-16)or$50000
+	Width 640,480
+	program_text="
+	MesBox program_text,640,480
+	Return
+
+*Vofari
+	If lparam==0{
+		Switch wparam
+			Case WINDOW_MAIN
+			Case WINDOW_FULL
+				If run_mode||listing||filesing{
+					CheckSentence "ö”
+					If listing{
+						listing=0
+						GoSub *BuildMenu
+					}Else: If filesing{
+						filesing=0
+						GoSub *BuildMenu
+					}
+				}Else: If mode_auto{
+					mode_auto=0
+					cursor_x=0
+					cursor_y+
+				}Else{
+					onexit_=1
+					Command COMMAND_QUIT
+					If endf: End
+				}
+				SwBreak
+			Case WINDOW_EDIT
+				gSel WINDOW_EDIT,-1
+				If mode_full{
+					gSel WINDOW_FULL,1
+				}Else{
+					gSel WINDOW_MAIN,1
+				}
+				SwBreak
+			Default
+				gSel wparam,-1
+				If mode_full{
+					gSel WINDOW_FULL,1
+				}Else{
+					gSel WINDOW_MAIN,1
+				}
+				SwBreak
+		SwEnd
+	}
+	Return
+
+*Popup
+	GoSub *BuildMenu
+	Switch ginfo_act
+		Case WINDOW_MAIN
+		Case WINDOW_FULL
+			If choosing_range{
+				TrackPopupMenu hwnd_menu(MENU_EDIT),$100,ginfo_mx,ginfo_my,0,hwnd,0
+			}Else{
+				TrackPopupMenu hwnd_menu(MENU_MAIN),$100,ginfo_mx,ginfo_my,0,hwnd,0
+			}
+			Command stat
+			SwBreak
+	SwEnd
+	Return
+
+*Refresh
+	gSel WINDOW_CONSOLE
+;	gSel WINDOW_LABOR
+	Repeat MAX_X*MAX_Y
+		data_work(cnt\MAX_X,cnt/MAX_X)=0
+	Loop
+	Color 0,0,0
+	BoxF
+	If mode_full{
+		gSel WINDOW_FULL
+	}Else{
+		gSel WINDOW_MAIN
+	}
+	freshing=1
+	Wait 0
+	Return
+
+*SysKeyDown
+	Switch wparam
+		Case KEY_F10
+			keybd_event KEY_F10,,KEYEVENTF_KEYUP
+			keybd_event KEY_F10,,
+			keybd_event KEY_F10,,KEYEVENTF_KEYUP
+			Split function_str(9),"\r",work_miteruzo
+			work_stat=stat
+			Repeat work_stat
+				OnDisplay work_miteruzo(cnt)
+				cursor_x+StrLen(work_miteruzo(cnt))
+				If cnt<work_stat-1{
+					GoSub *OnReturn
+				}
+			Loop
+			SwBreak
+	SwEnd
+	Return
+
+*OnReturn
+	sentence="
+	Repeat MAX_X
+		If (data(cnt,cursor_y)and$FF)==0{
+			Break
+		}
+		sentence+StrF("%c",data(cnt,cursor_y)and$FF)
+	Loop
+	cursor_x=0
+	cursor_y+
+	If inputting{
+		CheckSentence input_variable+"ê•"+StrMid(sentence,2,StrLen(sentence)-2)
+		inputting=0
+	}Else{
+		Split sentence,"Åu",work_a
+		stat_=stat
+		ForEach through
+			StrRep work_a(0),through(cnt),""
+		Loop
+		ForEach replace_from
+			StrRep work_a(0),replace_from(cnt),replace_to(cnt)
+		Loop
+		sentence=work_a(0)
+		Repeat stat_-1,1
+			Split work_a(cnt),"Åv",work_b
+			stat_=stat
+			work_a(cnt)=work_b(0)
+			cnt__=cnt
+			Repeat stat_-1,1
+				cnt_=cnt
+				ForEach through
+					StrRep work_b(cnt_),through(cnt),""
+				Loop
+				ForEach replace_from
+					StrRep work_b(cnt_),replace_from(cnt),replace_to(cnt)
+				Loop
+				work_a(cnt__)+"Åv"+work_b(cnt)
+			Loop
+			sentence+"Åu"+work_a(cnt)
+		Loop
+		If sentence!=""{
+			GoSub *Check
+		}
+		If mode_auto{
+			work_r=color_r
+			work_g=color_g
+			work_b=color_b
+			If program(auto_num-1)!=""{
+				color_r=255
+				color_g=0
+				color_b=0
+			}
+			OnDisplay Arabia2Kan(auto_num,0)+"ÅC
+			color_r=work_r
+			color_g=work_g
+			color_b=work_b
+			cursor_x+StrLen(Arabia2Kan(auto_num,0)+"ÅC")
+		}
+	}
+	Return
+
+*OnMenu
+	If lparam==0{
+		Command wparam and$FFFF
+	}
+	Return
+
+*BuildMenu
+	#ifndef __COMPILE_ON_HSP3DISH__
+		CreatePopupMenu
+		hwnd_menu(MENU_MAIN)=stat
+		NewMenu hwnd_real_menu(MENU_MAIN),0
+		CreatePopupMenu
+		hwnd_menu(MENU_FILE)=stat
+		NewMenu hwnd_real_menu(MENU_FILE),1
+		CreatePopupMenu
+		hwnd_menu(MENU_EDIT)=stat
+		NewMenu hwnd_real_menu(MENU_EDIT),1
+		CreatePopupMenu
+		hwnd_menu(MENU_VIEW)=stat
+		NewMenu hwnd_real_menu(MENU_VIEW),1
+		CreatePopupMenu
+		hwnd_menu(MENU_CONTROL)=stat
+		NewMenu hwnd_real_menu(MENU_CONTROL),1
+		CreatePopupMenu
+		hwnd_menu(MENU_HELP)=stat
+		NewMenu hwnd_real_menu(MENU_HELP),1
+		NewAboutMenu MENU_MAIN,$10,MENU_FILE,"&File
+		NewAboutMenu MENU_FILE,(run_mode||listing!=0||filesing!=0)*$03,COMMAND_NEW,"&N/êVãKçÏê¨
+		NewAboutMenu MENU_FILE,(run_mode||listing!=0||filesing!=0)*$03,COMMAND_LOAD,"&L/ì«çû...
+		NewAboutMenu MENU_FILE,(run_mode||listing!=0||filesing!=0)*$03,COMMAND_SAVE,"&S/ï€ë∂...
+		AddMenu hwnd_real_menu(MENU_FILE),"",0,$800
+		AddMenu hwnd_real_menu(MENU_FILE),"&Q/èIóπ\tGRPH+f•4",COMMAND_QUIT,(run_mode||listing!=0||filesing!=0)*$03
+		NewAboutMenu MENU_MAIN,$10 or(run_mode||listing!=0||filesing!=0)*$03,MENU_EDIT,"&E/ï“èS
+		NewAboutMenu MENU_EDIT,$03*(choosing_range==0),COMMAND_CUT,"&T/êÿéÊ\tCTRL+X
+		NewAboutMenu MENU_EDIT,$03*(choosing_range==0),COMMAND_COPY,"&C/ï°é \tCTRL+C
+		NewAboutMenu MENU_EDIT,0,COMMAND_PASTE,"&P/ì\ït\tCTRL+V
+		NewAboutMenu MENU_EDIT,$03*(choosing_range==0),COMMAND_DEL,"&D/çÌèú\tDEL
+		NewAboutMenu MENU_MAIN,$10,MENU_VIEW,"&V/ï\é¶
+		NewAboutMenu MENU_VIEW,menubar*$08,COMMAND_MENUBAR,"&M/çÿíPóì
+		NewAboutMenu MENU_VIEW,$03,COMMAND_TOOLBAR,"&T/ìπãÔóì [ñ¢é¿ëï]
+		NewAboutMenu MENU_VIEW,statusbar*$08,COMMAND_STATUSBAR,"&S/èÛë‘óì
+		NewAboutMenu MENU_VIEW,$03,COMMAND_MARK,"&K/åÆî’ïWéØ [ñ¢é¿ëï]
+		NewAboutMenu MENU_MAIN,$10,MENU_CONTROL,"&C/êßãö
+		NewAboutMenu MENU_CONTROL,(run_mode||listing!=0||filesing!=0)*$03,COMMAND_RUN,"&R/î‘ëgÇÃé¿çs
+		NewAboutMenu MENU_CONTROL,(run_mode==0&&listing==0&&filesing==0)*$03,COMMAND_BREAK,"&B/î‘ëgÇÃí‚é~
+		NewAboutMenu MENU_CONTROL,$800,0,""
+		NewAboutMenu MENU_CONTROL,(run_mode||listing!=0||filesing!=0)*$03,COMMAND_LIST,"&L/î‘ëgï\ÇÃï\é¶
+		NewAboutMenu MENU_MAIN,$10,MENU_HELP,"&H/õÒèï
+		NewAboutMenu MENU_HELP,$03,COMMAND_HELP,"&H/õÒèïÇÃï\é¶... [ñ¢é¿ëï]
+		AppendMenu hwnd_menu(MENU_MAIN),$800,0,""
+		AppendMenu hwnd_menu(MENU_MAIN),(run_mode||listing!=0||filesing!=0)*$03,COMMAND_QUIT,"&Q/èIóπ\tGRPH+f•4
+		If menubar{
+			ApplyMenu hwnd_real_menu(MENU_MAIN)
+		}Else{
+			ApplyMenu 0
+		}
+	#endif
+	Return
+
+*BuildStatus
+	#ifndef __COMPILE_ON_HSP3DISH__
+		If statusbar{
+			ClrObj
+			Stbar_Ini
+			work=50,150,200,-1
+			SendMsg StHwnd@stbar(ginfo_sel),SB_SETPARTS,4,VarPtr(work)
+			If mode_insert@{
+				Stbar_Text "\të}ì¸
+			}Else{
+				Stbar_Text "\tè„èë
+			}
+			If run_mode==0{
+				SendMsg StHwnd@stbar(ginfo_sel),SB_SETTEXT,1,StrF("\t\t%d:Å@%d",cursor_y+1,cursor_x+1)
+				SendMsg StHwnd@stbar(ginfo_sel),SB_SETTEXT,3,st_program
+			}Else{
+				SendMsg StHwnd@stbar(ginfo_sel),SB_SETTEXT,1,"\t\tBASIC é¿çsíÜ
+				If inputting{
+					SendMsg StHwnd@stbar(ginfo_sel),SB_SETTEXT,3,st_program
+				}
+			}
+		}
+	#endif
+	Return
+
+#ifndef __COMPILE_ON_HSP3DISH__
+
+*Resized
+	GoSub *Refresh
+	If statusbar{
+		Stbar_Resize
+	}
+	Return
+
+#endif

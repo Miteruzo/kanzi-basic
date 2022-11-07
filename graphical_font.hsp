@@ -1,0 +1,90 @@
+#include "hsp3utf.as
+
+#uselib "kernel32
+#func CreateFileMapping "CreateFileMappingA" sptr,sptr,sptr,sptr,sptr,str
+#cfunc GetLastError "GetLastError"
+#func MapViewOfFile "MapViewOfFile" sptr,sptr,sptr,sptr,sptr
+#func UnmapViewOfFile "UnmapViewOfFile" sptr
+#func CloseHandle "CloseHandle" sptr
+
+#const FILE_MAP_WRITE $02
+#const FILE_MAP_READ $04
+#const PAGE_READWRITE $04
+#const ERROR_ALREADY_EXISTS $B7
+
+#packopt hide 1
+#packopt name "char
+#packopt upx 1
+#packopt icon "char.ico
+
+	CreateFileMapping -1,0,PAGE_READWRITE,0,76,"kanzi_basic_memory
+	handle_map=stat
+	If handle_map==0{
+		bgScr 0,1,1,,0,0
+		Title "エラァ
+		Dialog "問題が発生しました．\n画像 Font ディタを生成できません．",1,"エラァ
+		End
+	}
+	If GetLastError()!=ERROR_ALREADY_EXISTS{
+		bgScr 0,1,1,,0,0
+		Title "エラァ
+		Dialog "この番組は単体では実行できません．",0,"エラァ
+		CloseHandle handle_map
+		End
+	}
+	MapViewOfFile handle_map,FILE_MAP_READ,0,0,0
+	pointer_first=stat
+	DupPtr font_name_,pointer_first,64,VarType("str")
+	font_name=CnvAtoS(font_name_)
+	DupPtr font_size_,pointer_first+64,4,VarType("int")
+	font_size=font_size_
+	DupPtr font_magnificate_,pointer_first+68,4,VarType("int")
+	font_magnificate=font_magnificate_
+	UnmapViewOfFile pointer_first
+	Dim font_name_
+	Dim font_size_
+	Dim font_magnificate_
+
+	Buffer 0,256*font_size*font_magnificate,256*font_size*font_magnificate
+	ClS 4
+	Color 255,255,255
+	Font font_name,font_size*font_magnificate
+	MapViewOfFile handle_map,FILE_MAP_WRITE,0,0,0
+	pointer=stat+72
+	DupPtr count,pointer,4,VarType("int")
+	count=0
+	Repeat 256
+		cnt_=cnt
+		Repeat 256
+			Pos font_size*font_magnificate*cnt,font_size*font_magnificate*cnt_
+			work=StrF("%c%c",cnt,cnt_)
+			Switch CnvAtoS(work)
+				Case "杼"
+					Print StrF("%c%c%c",$E7,$A7,$AD)
+					SwBreak
+				Case "戻"
+					Print StrF("%c%c%c",$E6,$88,$BE)
+					SwBreak
+				Case "黄"
+					Print StrF("%c%c%c",$E9,$BB,$83)
+					SwBreak
+				Case "豕"
+					Print StrF("%c%c%c",$E8,$95,$A4)
+					SwBreak
+				Case "渉"
+					Print StrF("%c%c%c",$E6,$B6,$89)
+					SwBreak
+				Default
+					Print CnvAtoS(work)
+					SwBreak
+			SwEnd
+		Loop
+		count+
+	Loop
+	Buffer 1,256*font_size,256*font_size
+	gZoom 256*font_size,256*font_size,0,0,0,256*font_size*font_magnificate,256*font_size*font_magnificate,1
+	bmpSave "char.bmp
+	count=257
+	UnmapViewOfFile pointer-72
+	CloseHandle handle_map
+	End

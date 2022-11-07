@@ -1,0 +1,8 @@
+CompanyName=Taker32X
+FileDescription=The interpreter you can build program with BASIC, the program language.
+FileVersion=0.0.0.891
+InternalName=K-BASIC
+LegalCopyright=Copyright (C) 2562 Taker32X
+OriginalFilename=basic.exe
+ProductName=”|ŠîŒN
+ProductVersion=0.0.0.891

@@ -1,0 +1,954 @@
+;*******************************************************************************
+; ワﾟイル名  : main.hsp
+; 更新年月日 : 平30/09/01
+; 作成者     : Taker32X
+; 作成年月日 : 平30/04/24
+; 機能       : 漢字 BASIC のインタプリタ
+;*******************************************************************************
+
+;----------------------------------- 須爲事 -----------------------------------
+;
+; 一，爲可算．
+;
+; 二，作可書文窓．
+;
+;------------------------------------------------------------------------------
+
+#const MAJOR_VER 0
+#const MINOR_VER 0
+#const PATCH_VER 0
+#const BUILD_NUM 640
+#define PROJECT_NAME ("kb")
+#define PROJECT_FILE ("main.hsp")
+
+#addition "../mod_taker.as
+
+#uselib "user32
+#cfunc GetWindowLong "GetWindowLongA" int,int
+#func SetWindowLong "SetWindowLongA" int,int,int
+#cfunc IsZoomed "IsZoomed" int
+#cfunc IsIconic "IsIconic" int
+
+#uselib "kernel32
+#func Beep "Beep" int,int
+
+#uselib "gdi32
+#func GetTextExtentPoint32 "GetTextExtentPoint32A" int,var,int,var
+
+#uselib "imm32
+#cfunc ImmCreateContext "ImmCreateContext"
+#cfunc ImmAssociateContext "ImmAssociateContext" int,int
+#func ImmSetCompositionWindow "ImmSetCompositionWindow" int,var,int
+#func ImmGetCompositionString "ImmGetCompositionStringA" int,int,var,int
+#func ImmSetCompositionFont "ImmSetCompositionFontA" int,var
+#func ImmReleaseContext "ImmReleaseContext" int,int
+#func ImmDestroyContext "ImmDestroyContext" int
+#cfunc ImmGetContext "ImmGetContext" int
+
+#uselib "footy2
+#func Footy2Create "Footy2Create" int,int,int,int,int,int
+#func Footy2Delete "Footy2Delete" int
+#func Footy2TextFromFile "Footy2TextFromFileA" int,sptr,int
+#func Footy2AddEmphasis "Footy2AddEmphasisA" int,sptr,sptr,int,int,int,int,int,int
+#func Footy2FlushEmphasis "Footy2FlushEmphasis" int
+
+#const SIZE_X 8
+#const SIZE_Y 16
+
+#const MAX_X 240
+#const MAX_Y 80
+
+#const KEY_BS $08
+#const KEY_RETURN $0D
+#const KEY_SHIFT $10
+#const KEY_CTRL $11
+#const KEY_LEFT $25
+#const KEY_UP $26
+#const KEY_RIGHT $27
+#const KEY_DOWN $28
+#const KEY_INS $2D
+#const KEY_DEL $2E
+
+#define ctype InKey(%1) If ((key_(%1)==0||key_(%1)>=32)&&key_(%1)\3==0&&key(%1))
+
+#enum WINDOW_MAIN=0
+#enum WINDOW_CONSOLE
+#enum WINDOW_GRAPHIC
+#enum WINDOW_EDIT
+#enum WINDOW_FREE	; 一番下に置く事．
+
+#module
+
+#deffunc OnDisplay str p1
+	work=p1
+	Repeat StrLen(work)
+		If cursor_x@+cnt>=(ginfo_winx/SIZE_X@){
+			cursor_x@=-cnt
+			cursor_y@+
+		}
+		data@(cnt+cursor_x@,cursor_y@)=Peek(work,cnt)or(color_r@<<8)or(color_g@<<16)or(color_b@<<24)
+	Loop
+	Return
+
+#deffunc local ChangeCalcMode
+	Switch calc_mode
+		Case 1
+			number_god+line_num+line_1st
+			SwBreak
+		Case 2
+			number_god-(line_num+line_1st)
+			SwBreak
+		Case 3
+			number_god*(line_num+line_1st)
+			SwBreak
+		Case 4
+			number_god/(line_num+line_1st)
+			SwBreak
+		Default
+			number_god=line_num+line_1st
+			SwBreak
+	SwEnd
+	line_1st=0
+	line_num=0
+	Return
+
+#defcfunc Kan2Arabia str p1
+	reading=p1
+	line_1st=0
+	line_num=0
+	number_god=0
+	calc_mode=0
+	Repeat memory_num@
+		Split reading,memory_name@(cnt),left_man
+		right_man(cnt)=StrLen(left_man)
+	Loop
+	For j,0,StrLen(reading),2
+		Repeat 9
+			If StrMid(reading,j,2)==number@(cnt){
+				line_1st=cnt+1
+				Break
+			}
+		Loop
+		Repeat 3
+			If StrMid(reading,j,2)==number@(cnt+9){
+				line_num+((line_1st+(line_1st==0))*(cnt+1))*10
+				line_1st=0
+				Break
+			}
+		Loop
+		Repeat 3
+			If StrMid(reading,j,2)==number@(cnt+12){
+				line_num+(line_1st+(line_1st==0))*Int(PowF(10,cnt+2))
+				line_1st=0
+				Break
+			}
+		Loop
+		Switch StrMid(reading,j,2)
+			Case "加"
+				ChangeCalcMode
+				calc_mode=1
+				SwBreak
+			Case "減"
+			Case "負"
+				ChangeCalcMode
+				calc_mode=2
+				SwBreak
+			Case "零"
+			Case "〇"
+				line_1st=0
+				SwBreak
+		SwEnd
+		Switch StrMid(reading,j,4)
+			Case "乘以"
+				ChangeCalcMode
+				calc_mode=3
+				j+2
+				SwBreak
+			Case "除以"
+				ChangeCalcMode
+				calc_mode=4
+				j+2
+				SwBreak
+		SwEnd
+		Repeat memory_num@
+			If j==right_man(cnt){
+				line_num=0
+				line_1st=memory_data@(cnt)
+				j+StrLen(memory_name@(cnt))-2
+				Break
+			}
+		Loop
+	Next
+	ChangeCalcMode
+	Return number_god
+
+#defcfunc Arabia2Kan int p1
+	work_num=p1
+	If work_num<0{
+		number_pay="負
+	}Else{
+		number_pay=""
+	}
+	work_num=Abs(work_num)
+	work_digit=Int(LogF(work_num)/LogF(10)+0.0000001)+1
+	Repeat work_digit
+		If work_num/PowF(10,work_digit-cnt-1)\10==0{
+			If (work_digit-cnt-1)\4==0{
+				Switch (work_digit-cnt-1)/4
+					Case 1
+						number_pay+"萬
+						SwBreak
+					Case 2
+						number_pay+"憶
+						SwBreak
+				SwEnd
+			}
+			Continue
+		}
+		If work_num/PowF(10,work_digit-cnt-1)\10>=2+((work_digit-cnt-1)\4==1)*2||(work_digit-cnt-1)\4==0{
+			number_pay+number@(work_num/PowF(10,work_digit-cnt-1)\10-1)
+		}
+		If (work_digit-cnt-1)\4{
+			Switch (work_digit-cnt-1)\4
+				Case 1
+					number_pay+"十
+					SwBreak
+				Case 2
+					number_pay+"百
+					SwBreak
+				Case 3
+					number_pay+"千
+					SwBreak
+			SwEnd
+		}Else{
+			Switch (work_digit-cnt-1)/4
+				Case 1
+					number_pay+"萬
+					SwBreak
+				Case 2
+					number_pay+"憶
+					SwBreak
+			SwEnd
+		}
+	Loop
+	If number_pay==""{
+		number_pay="零
+	}
+	Return number_pay
+
+#defcfunc GetKey2 int p1
+	GetKey key,p1
+	Return key
+
+#global
+
+	Buffer WINDOW_GRAPHIC,Limit(ginfo_dispx,SIZE_X,MAX_X*SIZE_X),Limit(ginfo_dispy,SIZE_Y,MAX_Y*SIZE_Y)
+	ClS 4
+	Buffer WINDOW_CONSOLE,Limit(ginfo_dispx,SIZE_X,MAX_X*SIZE_X),Limit(ginfo_dispy,SIZE_Y,MAX_Y*SIZE_Y)
+	ClS 4
+	Font MSMINCHO,SIZE_Y
+	sDim program,256,65529
+	GoSub *BuildEditor
+	Screen WINDOW_MAIN,Limit(ginfo_dispx,SIZE_X,MAX_X*SIZE_X),Limit(ginfo_dispy,SIZE_Y,MAX_Y*SIZE_Y),SCREEN_HIDE
+	SetWindowLong hwnd,-16,GetWindowLong(hwnd,-16)or$50000
+	Width 640,400
+	gosa_x=640-ginfo_winx
+	gosa_y=400-ginfo_winy
+	Width 640+gosa_x,400+gosa_y
+	hwnd_ime=ImmGetContext(hwnd)
+	Dim key,256
+	Dim data,MAX_X,MAX_Y
+	Dim data_work,MAX_X,MAX_Y
+	number="一","二","三","四","五","六","七","八","九","十","廿","卅","百","千","萬","憶
+	through="　"," "
+	replace_from="与","読","画","点","経","従","從","続","乗","万
+	replace_to  ="與","讀","畫","點","經","從","从","續","乘","萬
+	OnExit GoSub *Vofari
+	ClS 4
+	gSel WINDOW_MAIN,1
+	Dim logfont,20
+	logfont(0)=SIZE_Y
+	Poke logfont,23,1
+	font_name=MSMINCHO
+	MemCpy logfont,font_name,strlen(font_name),28,0
+	Font MSMINCHO,SIZE_Y
+	color_r=0:color_g=255:color_b=255
+	OnDisplay "漢字 BASIC －培基君－ ("+VERSION_NUMBER+" 號)
+	cursor_y+
+	OnDisplay "(C)松田有著作權於平成三十年
+	cursor_y+
+	OnDisplay "能用 "+VarSize(program)*Length(program)+" 字
+	cursor_y+
+	color_r=255:color_g=255:color_b=255
+	OnDisplay "備好。
+	cursor_x=0:cursor_y+2
+
+*Main
+	ime_text_="
+	Repeat
+		If ginfo_act==WINDOW_MAIN{
+			ImmSetCompositionFont hwnd_ime,logfont
+		}
+		If IsIconic(hwnd)==0{
+			If ginfo_winy<SIZE_Y{
+				Width ginfo_winx+gosa_x,SIZE_Y+gosa_y
+			}
+			If IsZoomed(hwnd)==0{
+				work_x=ginfo_winx:work_y=ginfo_winy
+				If work_x\SIZE_X{
+					work_x=(work_x+SIZE_X/2)/SIZE_X*SIZE_X
+				}
+				If work_y\SIZE_Y{
+					work_y=(work_y+SIZE_Y/2)/SIZE_Y*SIZE_Y
+				}
+				If ginfo_winx!=work_x||ginfo_winy!=work_y{
+					Width work_x+gosa_x,work_y+gosa_y
+				}
+			}
+			ReDraw 0
+			Color 0,0,0
+			BoxF
+			Pos 0,0
+			gCopy WINDOW_GRAPHIC,0,0,ginfo_winx,ginfo_winy
+			Pos 0,0
+			gCopy WINDOW_CONSOLE,0,0,ginfo_winx,ginfo_winy
+			If ginfo_act==WINDOW_MAIN{
+				form=2,cursor_x*SIZE_X,cursor_y*SIZE_Y
+				ImmSetCompositionWindow hwnd_ime,form
+				ime_text_=ime_text
+				ime_text="
+				ImmGetCompositionString hwnd_ime,8,ime_text,str_size2
+				str_size2=stat
+				sDim ime_text,str_size2+1
+				ImmGetCompositionString hwnd_ime,8,ime_text,str_size2
+			}
+			If run_mode{
+				Repeat
+					If run_line>=65529{
+						OnDisplay "好。
+						cursor_y+
+						cursor_x=0
+						run_mode=0
+						run_line=0
+						Break
+					}
+					If program(run_line)==""{
+						run_line+
+					}Else{
+						Break
+					}
+				Loop
+				If run_mode==0{
+					Continue
+				}
+				Split program(run_line),"，",sentence
+				stat_=stat
+				work_line=sentence(0)
+				sentence=sentence(1)
+				Repeat stat_-2,2
+					sentence+"，"+sentence(cnt)
+				Loop
+				GoSub *Check
+				If error{
+					run_mode=0
+				}
+				If GetKey2(KEY_CTRL)&&GetKey2('C'){
+					GoSub *Vofari
+				}
+				run_line+
+			}Else{
+				Repeat 256
+					If key(cnt){
+						key_(cnt)+
+					}Else{
+						key_(cnt)=0
+					}
+					GetKey key(cnt),cnt
+					If ginfo_act!=WINDOW_MAIN{
+						key(cnt)=0
+					}
+					If ime_text_==""&&ime_text==""{
+						If (key_(cnt)==0||key_(cnt)>=' ')&&key_(cnt)\3==0&&('0'<=cnt&&cnt<='Z'||cnt==' ')&&key(cnt)!=0&&key($F3)!=0{
+							Pos cursor_x*SIZE_X,cursor_y*SIZE_Y
+							data(cursor_x,cursor_y)=(cnt+('A'<=cnt&&cnt<='Z'&&key(KEY_SHIFT)==0)*('a'-'A'))or(color_r<<8)or(color_g<<16)or(color_b<<24)
+							cursor_x+
+							If cursor_x>=ginfo_winx/SIZE_X{
+								cursor_x=0
+								cursor_y+
+							}
+						}
+						If key(cnt)&&(key_(cnt)==0||key_(cnt)>=48)&&($08<=cnt&&cnt<=$7F){
+							blink=0
+						}
+					}
+				Loop
+				If ime_text_==""&&ime_text==""{
+					InKey(KEY_RETURN){
+						sentence="
+						Repeat MAX_X
+							If (data(cnt,cursor_y)and$FF)==0{
+								Break
+							}
+							sentence+StrF("%c",data(cnt,cursor_y)and$FF)
+						Loop
+						cursor_x=0
+						cursor_y+
+						Split sentence,"「",work_a
+						stat_=stat
+						ForEach through
+							StrRep work_a(0),through(cnt),""
+						Loop
+						ForEach replace_from
+							StrRep work_a(0),replace_from(cnt),replace_to(cnt)
+						Loop
+						sentence=work_a(0)
+						Repeat stat_-1,1
+							Split work_a(cnt),"」",work_b
+							stat_=stat
+							work_a(cnt)=work_b(0)
+							cnt__=cnt
+							Repeat stat_-1,1
+								cnt_=cnt
+								ForEach through
+									StrRep work_b(cnt_),through(cnt),""
+								Loop
+								ForEach replace_from
+									StrRep work_b(cnt_),replace_from(cnt),replace_to(cnt)
+								Loop
+								work_a(cnt__)+"」"+work_b(cnt)
+							Loop
+							sentence+"「"+work_a(cnt)
+						Loop
+						If sentence!=""{
+							GoSub *Check
+						}
+					}Else: InKey(KEY_BS){
+						cursor_x-
+						If cursor_x<0{
+							If cursor_y>0{
+								cursor_x=ginfo_winx/SIZE_X-1
+								cursor_y-
+							}Else{
+								cursor_x=0
+							}
+						}
+						Repeat Length(data)-cursor_x-1,cursor_x
+							data(cnt,cursor_y)=data(cnt+1,cursor_y)
+						Loop
+					}Else: InKey(KEY_DEL){
+						cursor_x-
+						If cursor_x<0: cursor_x=0
+						Repeat Length(data)-cursor_x-1,cursor_x
+							data(cnt,cursor_y)=data(cnt+1,cursor_y)
+						Loop
+					}Else: InKey(KEY_INS){
+						Repeat ginfo_winx/SIZE_X-cursor_x
+							data(ginfo_winx/SIZE_X-cnt,cursor_y)=data(ginfo_winx/SIZE_X-cnt-1,cursor_y)
+						Loop
+						data(cursor_x,cursor_y)=' '
+					}Else: InKey(KEY_LEFT){
+						cursor_x-
+						If cursor_x>0{
+							work=(data(cursor_x-1,cursor_y)and$FF)
+							If $81<=work&&work<=$9F||($E0<=work&&work<=$FC){
+								cursor_x-
+							}
+						}
+						If cursor_x<0{
+							If cursor_y>0{
+								cursor_x=ginfo_winx/SIZE_X-1
+								cursor_y-
+							}Else{
+								cursor_x=0
+							}
+						}
+					}Else: InKey(KEY_UP){
+						cursor_y-
+						If cursor_y<0{
+							cursor_y=0
+						}
+					}Else: InKey(KEY_RIGHT){
+						cursor_x+
+						If cursor_x<ginfo_winx/SIZE_X-1{
+							work=(data(cursor_x-1,cursor_y)and$FF)
+							If $81<=work&&work<=$9F||($E0<=work&&work<=$FC){
+								cursor_x+
+							}
+						}
+						If cursor_x>=ginfo_winx/SIZE_X{
+							cursor_x=0
+							cursor_y+
+						}
+					}Else: InKey(KEY_DOWN){
+						cursor_y+
+						If cursor_y>=ginfo_winy/SIZE_Y{
+							cursor_y=ginfo_winy/SIZE_Y-1
+						}
+					}Else: If GetKey2(KEY_CTRL):InKey('C'){
+						cursor_y+
+						cursor_x=0
+					}
+				}
+				If ginfo_act==0{
+					ime_comp="
+					s=0
+					ImmGetCompositionString hwnd_ime,$800,ime_comp,s
+					s=stat
+					sdim ime_comp,s+1
+					ImmGetCompositionString hwnd_ime,$800,ime_comp,s
+					If s==0{
+						ss=0
+					}
+					If s!=0&&ss==0{
+						str1_=ime_comp
+						ss=1
+					}else{
+						ime_comp="
+					}
+					If ime_text==""&&key($F3)==0: InKey(' '){
+						ime_comp="　
+					}
+					OnDisplay ime_comp
+					cursor_y+(cursor_x+StrLen(ime_comp))/(ginfo_winx/SIZE_X)
+					cursor_x=(cursor_x+StrLen(ime_comp))\(ginfo_winx/SIZE_X)
+				}
+			}
+			If cursor_y>=ginfo_winy/SIZE_Y{
+				cursor_y-
+				Repeat MAX_X*(MAX_Y-1)
+					data(cnt\MAX_X,cnt/MAX_X)=data(cnt\MAX_X,cnt/MAX_X+1)
+					data_work(cnt\MAX_X,cnt/MAX_X)=0
+				Loop
+				gSel WINDOW_CONSOLE
+				Color 0,0,0
+				BoxF
+				gSel WINDOW_MAIN
+			}
+			gSel WINDOW_CONSOLE
+			Repeat ginfo_winx/SIZE_X*(ginfo_winy/SIZE_Y)
+				work=Peek(data,(cnt/(ginfo_winx/SIZE_X)*MAX_X+cnt\(ginfo_winx/SIZE_X))*4)
+				If data(cnt\(ginfo_winx/SIZE_X),cnt/(ginfo_winx/SIZE_X))!=data_work(cnt\(ginfo_winx/SIZE_X),cnt/(ginfo_winx/SIZE_X)){
+					If full{
+						Color 0,0,0
+						BoxF cnt\(ginfo_winx/SIZE_X)*SIZE_X,cnt/(ginfo_winx/SIZE_X)*SIZE_Y,(cnt\(ginfo_winx/SIZE_X)+2)*SIZE_X-1,(cnt/(ginfo_winx/SIZE_X)+1)*SIZE_Y-1
+						Color work_r,work_g,work_b
+						Print StrF("%c%c",Peek(data,(cnt/(ginfo_winx/SIZE_X)*MAX_X+cnt\(ginfo_winx/SIZE_X)-1)*4),work)
+						full=0
+					}Else{
+						Pos cnt\(ginfo_winx/SIZE_X)*SIZE_X,cnt/(ginfo_winx/SIZE_X)*SIZE_Y
+						work_r=Peek(data,(cnt/(ginfo_winx/SIZE_X)*MAX_X+cnt\(ginfo_winx/SIZE_X))*4+1)
+						work_g=Peek(data,(cnt/(ginfo_winx/SIZE_X)*MAX_X+cnt\(ginfo_winx/SIZE_X))*4+2)
+						work_b=Peek(data,(cnt/(ginfo_winx/SIZE_X)*MAX_X+cnt\(ginfo_winx/SIZE_X))*4+3)
+						If $81<=work&&work<=$9F||($E0<=work&&work<=$FC)&&Peek(data,(cnt/(ginfo_winx/SIZE_X)*MAX_X+cnt\(ginfo_winx/SIZE_X)+1)*4)!=0{
+							full=1
+						}Else{
+							Color 0,0,0
+							BoxF cnt\(ginfo_winx/SIZE_X)*SIZE_X,cnt/(ginfo_winx/SIZE_X)*SIZE_Y,(cnt\(ginfo_winx/SIZE_X)+1)*SIZE_X-1,(cnt/(ginfo_winx/SIZE_X)+1)*SIZE_Y-1
+							Color work_r,work_g,work_b
+							Print StrF("%c",work)
+						}
+					}
+				}
+			Loop
+			gSel WINDOW_MAIN
+			MemCpy data_work,data,VarType("int")*Length(data)*Length2(data)
+			If run_mode==0{
+				If blink\32<16{
+					work=Peek(data,(cursor_y*MAX_X+cursor_x)*4)
+					If $81<=work&&work<=$9F||($E0<=work&&work<=$FC){
+						Repeat SIZE_X*SIZE_Y*2
+							pGet cursor_x*SIZE_X+cnt\(SIZE_X*2),cursor_y*SIZE_Y+cnt/(SIZE_X*2)
+							Color 255-ginfo_r,255-ginfo_g,255-ginfo_b
+							pSet cursor_x*SIZE_X+cnt\(SIZE_X*2),cursor_y*SIZE_Y+cnt/(SIZE_X*2)
+						Loop
+					}Else{
+						Repeat SIZE_X*SIZE_Y
+							pGet cursor_x*SIZE_X+cnt\SIZE_X,cursor_y*SIZE_Y+cnt/SIZE_X
+							Color 255-ginfo_r,255-ginfo_g,255-ginfo_b
+							pSet cursor_x*SIZE_X+cnt\SIZE_X,cursor_y*SIZE_Y+cnt/SIZE_X
+						Loop
+					}
+				}
+				blink+
+			}
+			ReDraw 1
+		}
+		Wait 0	; コンピュータのばか!!
+	Loop
+	Stop
+
+*Check
+	programming=0
+	ForEach number
+		If StrMid(sentence,0,2)==number(cnt){
+			programming=1
+			Break
+		}
+	Loop
+	If programming{
+		reading="
+		For i,0,StrLen(sentence),2
+			work=0
+			ForEach number
+				If StrMid(sentence,i,2)==number(cnt){
+					reading+number(cnt)
+					work=1
+					Break
+				}
+			Loop
+			If work==0{
+				If StrMid(sentence,i,2)!="，"{
+					program(Kan2Arabia(reading)-1)=reading+"，"+StrMid(sentence,i,StrLen(sentence)-i)
+				}Else{
+					program(Kan2Arabia(reading)-1)=reading+StrMid(sentence,i,StrLen(sentence)-i)
+				}
+				_Break
+			}
+		Next
+	}Else{
+		stat__=1
+		stat_=1
+		Split sentence,"「",work_a
+		stat_=stat
+		work_c=""
+		Split work_a(0),"而",sentence
+		sentence_num=stat-1
+		Repeat stat_-1,1
+			Split work_a(cnt),"」",work_b
+			stat_=stat
+			work_a(cnt)=work_b(0)
+			cnt__=cnt
+			Repeat stat_-1,1
+				cnt_=cnt
+				Split work_b(cnt),"而",work_c
+				stat__=stat
+				Repeat stat-1,1
+					sentence(sentence_num+cnt)=work_c(cnt)
+				Loop
+				work_a(cnt__)+"」"+work_c(0)
+			Loop
+			sentence(sentence_num)+"「"+work_a(cnt)
+			sentence_num+stat__-1
+		Loop
+		If Length(sentence)<=sentence_num{
+			sentence(sentence_num)=""
+		}
+		Repeat sentence_num+1
+			error=1
+			reading="
+			For i,0,StrLen(sentence(cnt))
+				reading+StrMid(sentence(cnt),i,1)
+				Switch reading
+					Case "滅幕"
+						work=StrMid(sentence(cnt),i+1,StrLen(sentence(cnt))-(i+1))
+						If work==""{
+							work="一"
+						}
+						If Kan2Arabia(work)and 1{
+							Repeat MAX_X*MAX_Y
+								data(cnt\MAX_X,cnt/MAX_X)=0
+							Loop
+							cursor_x=0
+							cursor_y=0
+							error=0
+						}
+						If Kan2Arabia(work)and 2{
+							gSel WINDOW_GRAPHIC
+							ClS 4
+							gSel WINDOW_MAIN
+							error=0
+						}
+						SwBreak
+					Case "言"
+					Case "云"
+					Case "謂"
+					Case "曰"
+					Case "記"
+						work=StrMid(sentence(cnt),i+1,StrLen(sentence(cnt))-(i+1))
+						carry=0
+						IF StrMid(work,StrLen(work)-2,2)=="續"{
+							work=StrMid(work,0,StrLen(work)-2)
+							carry=1
+						}
+						Split work,"「",work
+						If stat>1{
+							Split work(1),"」",work
+							OnDisplay work(0)
+							If carry{
+								cursor_x+StrLen(work(0))
+								If cursor_x>=ginfo_winx/SIZE_X{
+									cursor_y+
+									cursor_x\(ginfo_winx/SIZE_X)
+								}
+							}Else{
+								cursor_y+
+							}
+						}Else: If StrMid(work,0,2)=="文"{
+							ForEach program
+								If program(cnt)!=""{
+									OnDisplay program(cnt)
+									cursor_y+
+								}
+							Loop
+						}Else: If StrMid(work,0,2)=="書"{
+							DirList work2,"*.*"
+							NoteSel work2
+								Repeat notemax
+									NoteGet work3,cnt
+									OnDisplay work3
+									cursor_y+
+								Loop
+							NoteUnsel
+						}Else: If work!=""{
+							OnDisplay Arabia2Kan(Kan2Arabia(work))
+							If carry{
+								cursor_x+StrLen(Arabia2Kan(Kan2Arabia(work)))
+								If cursor_x>=ginfo_winx/SIZE_X{
+									cursor_y+
+									cursor_x\(ginfo_winx/SIZE_X)
+								}
+							}Else{
+								cursor_y+
+							}
+						}
+						error=0
+						SwBreak
+					Case "色是"
+						work=StrMid(sentence(cnt),i+1,StrLen(sentence(cnt))-(i+1))
+						error=0
+						Switch Kan2Arabia(work)
+							Case 4
+								color_r=255
+								color_g=0
+								color_b=0
+								SwBreak
+							Case 7
+								color_r=255
+								color_g=255
+								color_b=255
+								SwBreak
+							Default
+								error=3
+								SwBreak
+						SwEnd
+						SwBreak
+					Case "鳴"
+						Beep 880,500
+						error=0
+						SwBreak
+					Case "走"
+						run_mode=1
+						run_line=0
+						error=0
+						SwBreak
+					Case "終"
+						run_mode=0
+						error=0
+						SwBreak
+					Case "退"
+						End
+					Case "去"
+						work=StrMid(sentence(cnt),i+1,StrLen(sentence(cnt))-(i+1))
+						run_line=Kan2Arabia(work)-2
+						run_mode=1
+						error=0
+						SwBreak
+					Case "幅是"
+						Width Kan2Arabia(StrMid(sentence(cnt),i+1,StrLen(sentence(cnt))-(i+1)))*SIZE_X+gosa_x,ginfo_winy+gosa_y
+						error=0
+						SwBreak
+					Case "高是"
+						Width ginfo_winx+gosa_x,Kan2Arabia(StrMid(sentence(cnt),i+1,StrLen(sentence(cnt))-(i+1)))*SIZE_Y+gosa_y
+						error=0
+						SwBreak
+					Case "讀"
+						work=StrMid(sentence(cnt),i+1,StrLen(sentence(cnt))-(i+1))
+						Split work,"「",work
+						If stat>1{
+							Split work(1),"」",work
+							Exist work(0)
+							If strsize!=-1{
+								sDim work2,256*Length(program)
+								bLoad work(0),work2
+								ForEach program
+									MemCpy program(cnt),work2,256,0,256*cnt
+								Loop
+								error=0
+							}Else{
+								error=2
+							}
+						}
+						SwBreak
+					Case "書"
+						work=StrMid(sentence(cnt),i+1,StrLen(sentence(cnt))-(i+1))
+						Split work,"「",work
+						If stat>1{
+							Split work(1),"」",work
+							sDim work2,256*Length(program)
+							ForEach program
+								MemCpy work2,program(cnt),256,256*cnt
+							Loop
+							bSave work(0),work2
+							error=0
+						}Else{
+							error=2
+						}
+						SwBreak
+					Case "滅文"
+						sDim program,256,65529
+						error=0
+						SwBreak
+					Case "畫"
+						work=StrMid(sentence(cnt),i+1,StrLen(sentence(cnt))-(i+1))
+						If StrMid(work,0,4)=="點於"{
+							work=StrMid(work,4,StrLen(work)-4)
+							Split work,"與",work
+							Repeat 2
+								If StrMid(work(cnt),0,4)=="緯是"{
+									graph_x=Kan2Arabia(StrMid(work(cnt),4,StrLen(work(cnt))-4))
+								}Else: If StrMid(work(cnt),0,4)=="經是"{
+									graph_y=Kan2Arabia(StrMid(work(cnt),4,StrLen(work(cnt))-4))
+								}
+							Loop
+							gSel WINDOW_GRAPHIC
+							Color color_r,color_g,color_b
+							pSet graph_x,graph_y
+							gSel WINDOW_MAIN
+							error=0
+						}Else: If StrMid(work,0,4)=="線於"{
+							work=StrMid(work,4,StrLen(work)-4)
+						}Else{
+							Split work,"「",work
+							If stat>1{
+								Split work(1),"」",work
+								Exist work(0)
+								If strsize!=-1{
+									gSel WINDOW_GRAPHIC
+									PicLoad work(0),1
+									gSel WINDOW_MAIN
+									error=0
+								}Else{
+									error=2
+								}
+							}
+						}
+						SwBreak
+					Case "編輯"
+						gSel WINDOW_EDIT,1
+						
+						gSel WINDOW_MAIN
+						error=0
+						SwBreak
+					Case "於"
+						work=StrMid(sentence(cnt),i+1,StrLen(sentence(cnt))-(i+1))
+						Split work,"與",work
+						Repeat 2
+							If StrMid(work(cnt),0,4)=="緯是"{
+								cursor_x=Kan2Arabia(StrMid(work(cnt),4,StrLen(work(cnt))-4))
+							}Else: If StrMid(work(cnt),0,4)=="經是"{
+								cursor_y=Kan2Arabia(StrMid(work(cnt),4,StrLen(work(cnt))-4))
+							}
+						Loop
+						error=0
+						SwBreak
+				SwEnd
+			Next
+			If error==1{
+				Split sentence(cnt),"是",work_pi,work_wei
+				If stat>1{
+					flag=0
+					Repeat memory_num
+						If memory_name(cnt)==work_pi{
+							memory_data(cnt)=Kan2Arabia(work_wei)
+							flag=1
+						}
+					Loop
+					If flag==0{
+						memory_name(memory_num)=work_pi
+						memory_data(memory_num)=Kan2Arabia(work_wei)
+						memory_num+
+					}
+					error=0
+				}
+			}
+			Switch error
+				Case 0
+					SwBreak
+				Case 1
+					Beep 880,500
+					If run_mode{
+						OnDisplay "第"+work_line+"有不正文。
+					}Else{
+						OnDisplay "有不正文。
+					}
+					cursor_y+
+					Break
+					SwBreak
+				Case 2
+					Beep 880,500
+					If run_mode{
+						OnDisplay "其書於"+work_line+"不知。
+					}Else{
+						OnDisplay "其書不知也。
+					}
+					cursor_y+
+					Break
+					SwBreak
+				Case 3
+					Beep 880,500
+					OnDisplay "有不適値。
+					cursor_y+
+					Break
+					SwBreak
+				Default
+					Beep 880,500
+					If run_mode{
+						OnDisplay "生未知誤於"+work_line+"。
+					}Else{
+						OnDisplay "生未知誤。
+					}
+					cursor_y+
+					Break
+					SwBreak
+			SwEnd
+		Loop
+		If run_mode==0{
+			OnDisplay "好。
+			cursor_y+
+			cursor_x=0
+		}
+	}
+	Return
+	Stop
+
+*BuildEditor
+	Screen WINDOW_EDIT,ginfo_dispx,ginfo_dispy,SCREEN_HIDE
+	SetWindowLong hwnd,-16,GetWindowLong(hwnd,-16)or$50000
+	Width 640,480
+	MesBox program,640,480
+	Return
+
+*Vofari
+	If lparam==0{
+		Switch wparam
+			Case WINDOW_MAIN
+				If run_mode{
+					Beep 880,500
+					OnDisplay "壞於"+work_line+"。
+					cursor_x=0
+					cursor_y+
+					OnDisplay "好。
+					cursor_y+
+					cursor_x=0
+					run_mode=0
+				}Else{
+					End
+				}
+				SwBreak
+			Case WINDOW_EDIT
+				gSel WINDOW_EDIT,-1
+				gSel WINDOW_MAIN,1
+				SwBreak
+		SwEnd
+	}
+	Return
