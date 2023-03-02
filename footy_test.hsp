@@ -1,8 +1,0 @@
-#uselib "footy2
-#func Footy2Create "Footy2Create" int, int, int, int, int, int
-#func Footy2Delete "Footy2Delete" int
-#func Footy2TextFromFile "Footy2TextFromFileA" int, sptr, int
-#func Footy2AddEmphasis "Footy2AddEmphasisA" int, sptr, sptr, int, int, int, int, int, int
-#func Footy2FlushEmphasis "Footy2FlushEmphasis" int
-
-	Footy2Create hwnd, 0, 0, ginfo_winx, ginfo_winy
