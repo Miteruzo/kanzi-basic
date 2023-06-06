@@ -13,10 +13,10 @@
 #define global PROJECT_NAME ("kb_android")
 #define global PROJECT_FILE ("android.hsp")
 
-#addition "../mod_taker.as
-#include "hsp3dish.as
+#addition "../mod_taker.as"
+#include "hsp3dish.as"
 
-#pack "utf8.dat
+#pack "utf8.dat"
 #packopt xsize 400
 #packopt ysize 800
 
